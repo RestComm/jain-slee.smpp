@@ -1,4 +1,5 @@
 # SLEE
+${release.dir}
 resources/smpp5/docs/sources-mobicents/src/
 resources/smpp5/docs/sources-telscale/src/
 
