@@ -14,14 +14,12 @@
 
 	<properties>
 		<THIS.PLATFORM>Telscale</THIS.PLATFORM>
-		<JEE.PLATFORM>
-			JBoss Enterprise Application Platform
-		</JEE.PLATFORM>
 		<THIS.ISSUE_TRACKER_URL>
 			https://telestax.zendesk.com/home
 		</THIS.ISSUE_TRACKER_URL>
 		<THIS.PACKAGE_NAME>smpp</THIS.PACKAGE_NAME>
-		<THIS.SOURCE_CODE_URL>NOT AVAILABLE</THIS.SOURCE_CODE_URL>
+		<JEE.PLATFORM>JBoss Application Server</JEE.PLATFORM>
+		<THIS.SOURCE_CODE_URL>https://code.google.com/p/jain-slee.smpp</THIS.SOURCE_CODE_URL>
 		<author.email.eduardo>
 			abhayani (at) redhat.com
 		</author.email.eduardo>
