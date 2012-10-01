@@ -14,28 +14,14 @@
 
 	<modules>
 		<module>sources</module>
+		<module>sources-telscale</module>
+		<module>jdocbook-telscale</module>
 	</modules>
+	
 	<properties>
 		<docs.ra.name>SMPP5</docs.ra.name>
 		<docs.ra.dirname>smpp5</docs.ra.dirname>
 		<docs.bookid>SMPP5</docs.bookid>
 	</properties>
-
-	<profiles>
-		<profile>
-			<id>telscale</id>
-			<modules>
-				<module>sources-telscale</module>
-				<module>jdocbook-telscale</module>
-			</modules>
-		</profile>
-		<profile>
-			<id>maven-release</id>
-			<modules>
-				<module>sources-telscale</module>
-				<module>jdocbook-telscale</module>
-			</modules>
-		</profile>
-	</profiles>
 
 </project>
