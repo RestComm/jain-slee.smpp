@@ -16,7 +16,6 @@
 		<dependency>
 			<groupId>org.mobicents.protocols.smpp</groupId>
 			<artifactId>smpp-impl</artifactId>
-			<version>${mobicents.smppapi.version}</version>
 		</dependency>
 	</dependencies>
 

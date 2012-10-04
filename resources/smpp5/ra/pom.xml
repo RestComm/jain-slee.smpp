@@ -19,7 +19,6 @@
 		<dependency>
 			<groupId>org.mobicents.servers.jainslee.core</groupId>
 			<artifactId>fault-tolerant-ra-api</artifactId>
-			<version>${project.version}</version>
 		</dependency>
 	</dependencies>
 
