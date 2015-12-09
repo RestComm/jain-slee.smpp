@@ -22,9 +22,9 @@
 		</THIS.ISSUE_TRACKER_URL>
 		<THIS.PACKAGE_NAME>smpp</THIS.PACKAGE_NAME>
 		<THIS.SOURCE_CODE_URL>NOT AVAILABLE</THIS.SOURCE_CODE_URL>
-		<author.email.eduardo>
-			abhayani (at) redhat.com
-		</author.email.eduardo>
+		<author.email.amit>
+			amit.bhayani (at) gmail.com
+		</author.email.amit>
 	</properties>
 
 	<build>
