@@ -22,7 +22,7 @@
 
 	<abstract>
 		<para>
-			Mobicents JAIN SLEE SMPP Resource Adaptor (RA) is the JAIN SLEE 1.1 RA for the SMPP Protocol version 5.0, used in Mobicents JAIN SLEE platform.
+			Mobicents JAIN SLEE SMPP Resource Adaptor (RA) is the JAIN SLEE 1.1 RA for the SMPP Protocol version 5.0, used in Restcomm JAIN SLEE platform.
 		</para>
 		<para>
 			The RA uses the SMPP Impl from <ulink url="http://smppapi.sourceforge.net/documentation/user-guide/">smppapi</ulink> poject.

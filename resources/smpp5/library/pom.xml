@@ -10,13 +10,13 @@
 
 	<artifactId>smpp5-library</artifactId>
 
-	<name>Mobicents :: Resources :: ${pom.artifactId}</name>
+	<name>Restcomm :: Resources :: ${pom.artifactId}</name>
 
 	<dependencies>
 		<dependency>
 			<groupId>org.mobicents.protocols.smpp</groupId>
 			<artifactId>smpp-impl</artifactId>
-			<version>${mobicents.smppapi.version}</version>
+			<version>${restcomm.smppapi.version}</version>
 		</dependency>
 	</dependencies>
 

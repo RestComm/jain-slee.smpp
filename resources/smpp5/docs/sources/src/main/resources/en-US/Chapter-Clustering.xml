@@ -22,7 +22,7 @@
 		<title>Load Balancing</title>
 		<para>
 			SMPP RA implements the HA API (FaultTolerantResourceAdaptor)
-			of Mobicents JSLEE. Same entity of SMPP RA can be started in
+			of Restcomm JSLEE. Same entity of SMPP RA can be started in
 			different cluster enabled nodes of JSLEE to take care of
 			load balancing.
 		</para>

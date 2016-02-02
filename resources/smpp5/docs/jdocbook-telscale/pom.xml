@@ -1,12 +1,12 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
 	<parent>
-		<artifactId>mobicents-slee-ra-smpp5-docs</artifactId>
+		<artifactId>restcomm-slee-ra-smpp5-docs</artifactId>
 		<groupId>org.mobicents.resources</groupId>
 		<version>2.8.0-SNAPSHOT</version>
 	</parent>
 
-	<artifactId>mobicents-slee-ra-smpp5-docs-jdocbook-telscale</artifactId>
+	<artifactId>restcomm-slee-ra-smpp5-docs-jdocbook-telscale</artifactId>
 
 	<modelVersion>4.0.0</modelVersion>
 
@@ -59,7 +59,7 @@
 								<artifactItem>
 									<groupId>${pom.groupId}</groupId>
 									<artifactId>
-										mobicents-slee-ra-smpp5-docs-sources-telscale
+										restcomm-slee-ra-smpp5-docs-sources-telscale
 									</artifactId>
 									<version>${pom.version}</version>
 									<type>jar</type>
