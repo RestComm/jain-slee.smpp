@@ -19,7 +19,7 @@
 
 	<properties>
 		<ch.smpp.version>5.0.4</ch.smpp.version>
-		<smpp-extensions.version>1.0.0-SNAPSHOT</smpp-extensions.version>
+		<smpp-extensions.version>1.0.6</smpp-extensions.version> <!-- 1.0.0-SNAPSHOT -->
 	</properties>
 
 	<scm>
