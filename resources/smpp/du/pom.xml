@@ -13,11 +13,13 @@
 
 	<dependencies>
 		<!-- components -->
+		<!--
 		<dependency>
 			<groupId>${project.groupId}</groupId>
 			<artifactId>smpp-server-ra-library</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+		-->
 		<dependency>
 			<groupId>${project.groupId}</groupId>
 			<artifactId>smpp-server-ra-events</artifactId>
