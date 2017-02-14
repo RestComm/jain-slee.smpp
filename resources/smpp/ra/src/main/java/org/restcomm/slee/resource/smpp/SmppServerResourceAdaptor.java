@@ -158,6 +158,7 @@ public class SmppServerResourceAdaptor implements ResourceAdaptor {
 	@Override
 	public void raInactive() {
 	    SmppManagement smscManagemet = SmppManagement.getInstance();
+		String entityName = this.raContext.getEntityName();
 		try {
 			smscManagemet.stopSmppManagement();
 		} catch (Exception e) {
@@ -165,7 +166,7 @@ public class SmppServerResourceAdaptor implements ResourceAdaptor {
 		}
 
 		if (tracer.isInfoEnabled()) {
-			tracer.info("Inactivated RA Entity " + this.raContext.getEntityName());
+			tracer.info("Inactivated RA Entity " + entityName);
 		}
 	}
 
