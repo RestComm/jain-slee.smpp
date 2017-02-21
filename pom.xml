@@ -4,12 +4,12 @@
 	<parent>
 		<groupId>org.mobicents.servers.jainslee</groupId>
 		<artifactId>restcomm-slee-parent</artifactId>
-		<version>3.0.7</version>
+		<version>3.0.8</version>
 	</parent>
 
 	<groupId>org.restcomm.slee.resource.smpp</groupId>
 	<artifactId>restcomm-slee-smpp</artifactId>
-	<version>7.0.0-SNAPSHOT</version>
+	<version>7.1.3</version>
 			
 	<packaging>pom</packaging>
 	
