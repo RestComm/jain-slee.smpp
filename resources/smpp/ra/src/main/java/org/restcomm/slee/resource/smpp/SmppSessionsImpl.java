@@ -477,15 +477,19 @@ public class SmppSessionsImpl implements SmppSessions {
             DefaultSmppSession defaultSession = esme.getSmppSession();
 
             // firing of onPduRequestTimeout() for sent messages for which we do not have responses
-            Window<Integer, PduRequest, PduResponse> wind = defaultSession.getSendWindow();
-            Map<Integer, WindowFuture<Integer, PduRequest, PduResponse>> futures = wind.createSortedSnapshot();
-            for (WindowFuture<Integer, PduRequest, PduResponse> future : futures.values()) {
-                tracer.warning("Firing of onPduRequestTimeout from DefaultSmppServerHandler.sessionDestroyed(): "
-                        + future.getRequest().toString());
-                defaultSession.expired(future);
+            if (defaultSession != null) {
+                Window<Integer, PduRequest, PduResponse> wind = defaultSession.getSendWindow();
+                Map<Integer, WindowFuture<Integer, PduRequest, PduResponse>> futures = wind.createSortedSnapshot();
+                for (WindowFuture<Integer, PduRequest, PduResponse> future : futures.values()) {
+                    tracer.warning("Firing of onPduRequestTimeout from DefaultSmppServerHandler.sessionDestroyed(): "
+                            + future.getRequest().toString());
+                    defaultSession.expired(future);
+                }
+                tracer.severe("Received fireUnknownThrowable: ", throwable);
+            } else {
+                tracer.severe("Received fireUnknownThrowable with undifined defaultSession: ", throwable);
             }
 
-		    tracer.severe("Received fireUnknownThrowable", throwable);
 			// TODO what here?
 		}
 
