@@ -130,6 +130,12 @@ public class SmppSessionsImpl implements SmppSessions {
 				throw new UnrecoverablePduException("Sequence number of response is not same as request");
 			}
 			defaultSmppSession.sendResponsePdu(response);
+
+            // !!!!- TODO: remove it ......................
+            tracer.info("***** smpp_in : submit_sm - Activity ended for: " + request + ", smppServerTransactionHandle: "
+                    + smppServerTransactionImpl.getActivityHandle());
+            // !!!!- TODO: remove it ......................
+
 		} finally {
 			
 			SmppSessionCounters smppSessionCounters = esme.getSmppSession().getCounters();
@@ -203,7 +209,13 @@ public class SmppSessionsImpl implements SmppSessions {
 
 		@Override
 		public PduResponse firePduRequestReceived(PduRequest pduRequest) {
-			
+
+
+            // !!!!- TODO: remove it ......................
+		    tracer.info("***** smpp_in : PduRequest received: " + pduRequest);
+            // !!!!- TODO: remove it ......................
+
+
 			PduResponse response = pduRequest.createResponse();
 			try {
 				SmppTransactionImpl smppServerTransaction = null;
@@ -236,6 +248,14 @@ public class SmppSessionsImpl implements SmppSessions {
 					smppServerResourceAdaptor.startNewSmppServerTransactionActivity(smppServerTransaction);
 					smppServerResourceAdaptor.fireEvent(EventsType.SUBMIT_SM,
 							smppServerTransaction.getActivityHandle(), submitSm);
+
+
+		            // !!!!- TODO: remove it ......................
+                        tracer.info("***** smpp_in : submit_sm - Activity created for: " + pduRequest
+                                + ", smppServerTransactionHandle: " + smppServerTransactionHandle);
+		            // !!!!- TODO: remove it ......................
+
+
 
 					// Return null. Let SBB send response back
 					return null;
