@@ -10,6 +10,7 @@ import javax.slee.resource.ActivityFlags;
 import javax.slee.resource.ActivityHandle;
 import javax.slee.resource.ActivityIsEndingException;
 import javax.slee.resource.ConfigProperties;
+import javax.slee.resource.EventFlags;
 import javax.slee.resource.FailureReason;
 import javax.slee.resource.FireEventException;
 import javax.slee.resource.FireableEventType;
@@ -35,6 +36,8 @@ public class SmppServerResourceAdaptor implements ResourceAdaptor {
 	private SmppSessionsImpl smppServerSession = null;
 
 	private transient static final Address address = new Address(AddressPlan.IP, "localhost");
+	
+	private static final int EVENT_FLAGS = EventFlags.REQUEST_PROCESSING_FAILED_CALLBACK;
 
 	public SmppServerResourceAdaptor() {
 		// TODO Auto-generated constructor stub
@@ -69,7 +72,7 @@ public class SmppServerResourceAdaptor implements ResourceAdaptor {
 	@Override
 	public void eventProcessingFailed(ActivityHandle arg0, FireableEventType arg1, Object arg2, Address arg3,
 			ReceivableService arg4, int arg5, FailureReason arg6) {
-		// TODO Auto-generated method stub
+		tracer.warning("eventProcessingFailed ActivityHandle="+arg0+ " FireableEventType="+arg1+" ReceivableService="+arg4+" Flag="+arg5+" FailureReason"+ arg6);
 
 	}
 
@@ -259,7 +262,7 @@ public class SmppServerResourceAdaptor implements ResourceAdaptor {
 			tracer.severe("Event id for " + eventID + " is unknown, cant fire!!!");
 		} else {
 			try {
-				sleeEndpoint.fireEvent(handle, eventID, event, address, null);
+				sleeEndpoint.fireEvent(handle, eventID, event, address, null, EVENT_FLAGS);
 			} catch (UnrecognizedActivityHandleException e) {
 				this.tracer.severe("Error while firing event", e);
 			} catch (IllegalEventException e) {

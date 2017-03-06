@@ -25,4 +25,24 @@
 
 
 	</dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-eclipse-plugin</artifactId>
+                <groupId>org.mobicents.tools</groupId>
+                <inherited>false</inherited>
+                <executions />
+                <configuration>
+                    <excludePoms />
+                    <classpathExcludes>
+                        <exclude>xml-apis:xml-apis</exclude>
+                        <exclude>jtidy:jtidy</exclude>
+                    </classpathExcludes>
+                    <resolveTransitiveDependencies>true</resolveTransitiveDependencies>
+                    <eclipseProjectName>slee-ra-smpp</eclipseProjectName>
+                </configuration>
+            </plugin>
+        </plugins>		
+    </build>
 </project>
