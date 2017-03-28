@@ -33,6 +33,7 @@ public class SmppServerResourceAdaptor implements ResourceAdaptor {
 	private transient EventLookupFacility eventLookup = null;
 	private EventIDCache eventIdCache = null;
 	private SmppSessionsImpl smppServerSession = null;
+	private SmppServerResourceAdaptorStatisticsUsageParameters defaultUsageParameters;
 
 	private transient static final Address address = new Address(AddressPlan.IP, "localhost");
 
@@ -210,6 +211,15 @@ public class SmppServerResourceAdaptor implements ResourceAdaptor {
 		this.eventLookup = raContext.getEventLookupFacility();
 		this.eventIdCache = new EventIDCache(raContext);
 		this.smppServerSession = new SmppSessionsImpl(this);
+
+		try {
+			this.defaultUsageParameters =
+					(SmppServerResourceAdaptorStatisticsUsageParameters) raContext.getDefaultUsageParameterSet();
+
+			tracer.info("defaultUsageParameters: " + this.defaultUsageParameters);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 	@Override
