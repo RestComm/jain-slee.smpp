@@ -12,11 +12,11 @@ public class PduRequestTimeout {
 		this.systemId = systemId;
 	}
 
-	protected PduRequest getPduRequest() {
+	public PduRequest getPduRequest() {
 		return pduRequest;
 	}
 
-	protected String getSystemId() {
+	public String getSystemId() {
 		return systemId;
 	}
 
