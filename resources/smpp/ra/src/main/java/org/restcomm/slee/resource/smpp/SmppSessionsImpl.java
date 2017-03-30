@@ -132,8 +132,8 @@ public class SmppSessionsImpl implements SmppSessions {
 			defaultSmppSession.sendResponsePdu(response);
 
             // !!!!- TODO: remove it ......................
-            tracer.info("***** smpp_in : submit_sm - Activity ended for Esme=" + esme + ", request=" + request
-                    + ", smppServerTransactionHandle: " + smppServerTransactionImpl.getActivityHandle());
+//            tracer.info("***** smpp_in : submit_sm - Activity ended for Esme=" + esme + ", request=" + request
+//                    + ", smppServerTransactionHandle: " + smppServerTransactionImpl.getActivityHandle());
             // !!!!- TODO: remove it ......................
 
 		} finally {
@@ -212,7 +212,7 @@ public class SmppSessionsImpl implements SmppSessions {
 
 
             // !!!!- TODO: remove it ......................
-            tracer.info("***** smpp_in : PduRequest received: Esme=" + esme + ", request=" + pduRequest);
+//            tracer.info("***** smpp_in : PduRequest received: Esme=" + esme + ", request=" + pduRequest);
             // !!!!- TODO: remove it ......................
 
 
@@ -251,8 +251,8 @@ public class SmppSessionsImpl implements SmppSessions {
 
 
 		            // !!!!- TODO: remove it ......................
-                        tracer.info("***** smpp_in : submit_sm - Activity created for Esme=" + esme + ", request=" + pduRequest
-                                + ", smppServerTransactionHandle: " + smppServerTransactionHandle);
+//                        tracer.info("***** smpp_in : submit_sm - Activity created for Esme=" + esme + ", request=" + pduRequest
+//                                + ", smppServerTransactionHandle: " + smppServerTransactionHandle);
 		            // !!!!- TODO: remove it ......................
 
 
