@@ -15,11 +15,13 @@
 	
 	<modules>
 		<module>resources/smpp</module>
+		<module>test/smpp-test-sbb</module>
 	</modules>
 
 	<properties>
 		<ch.smpp.version>5.0.5</ch.smpp.version>
 		<smpp-extensions.version>1.0.15</smpp-extensions.version> <!-- 1.0.0-SNAPSHOT -->
+		<restcomm.slee.ext.version>7.0.63</restcomm.slee.ext.version>
 	</properties>
 
 	<scm>
