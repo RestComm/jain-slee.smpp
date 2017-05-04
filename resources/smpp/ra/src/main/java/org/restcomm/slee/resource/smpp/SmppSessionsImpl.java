@@ -494,7 +494,7 @@ public class SmppSessionsImpl implements SmppSessions {
 	public class SenderThread extends Thread {
 
 		private volatile Boolean running = true;
-		private LinkedBlockingQueue<SmppSendingTask> queue = new LinkedBlockingQueue<>();
+		private LinkedBlockingQueue<SmppSendingTask> queue;
 
 		public SenderThread(String name) {
 			super(name);
@@ -520,6 +520,7 @@ public class SmppSessionsImpl implements SmppSessions {
 		}
 
 		public void run() {
+			queue = new LinkedBlockingQueue<>();
 			while (running) {
 				SmppSendingTask task = null;
 				try {
