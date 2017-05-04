@@ -182,11 +182,10 @@ public class SmppSessionsImpl implements SmppSessions {
 		public SmppSessionHandler createNewSmppSessionHandler(Esme esme) {
 
 			SenderThread senderThread = new SenderThread("SMPP ESME Sender " + esme.getName());
-			senderThread.start();
 			SenderThread existingThread = esmeSenderThreads.putIfAbsent(esme.getName(), senderThread);
-			if (existingThread != null)
-				senderThread.deactivate();
-
+			if (existingThread == null)
+				senderThread.start();			
+			
 			return new SmppSessionHandlerImpl(esme);
 		}
 	}
