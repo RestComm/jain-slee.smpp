@@ -31,6 +31,5 @@
 			<artifactId>ch-smpp</artifactId>
 			<version>${ch.smpp.version}</version>
 		</dependency>			
-	</dependencies>
-
+	</dependencies>	
 </project>
