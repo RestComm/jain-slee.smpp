@@ -98,10 +98,6 @@ public class SmppSessionsImpl implements SmppSessions {
 		SmppSendingTask task = new SmppSendingTask(esme, request, timeoutMillis, null, smppServerTransaction);
 		sender.offer(task);
 
-		fireSendPduStatusEvent(EventsType.SEND_PDU_STATUS,
-				task.getSmppServerTransaction(), task.getRequest(),
-				task.getResponse(), null, true);
-
 		return smppServerTransaction;
 	}
 
@@ -129,8 +125,6 @@ public class SmppSessionsImpl implements SmppSessions {
 		SmppSendingTask task = new SmppSendingTask(esme, request, 0L, response, smppServerTransactionImpl);
 		sender.offer(task);
 
-		fireSendPduStatusEvent(EventsType.SEND_PDU_STATUS, task.getSmppServerTransaction(), task.getRequest(), task.getResponse(), null, true);
-	
 		// TODO Should it catch UnrecoverablePduException and
 		// SmppChannelException and close underlying SmppSession?
 	}
@@ -510,19 +504,18 @@ public class SmppSessionsImpl implements SmppSessions {
 		public void deactivate() {
 			running = false;
 			this.interrupt();
-			while (!queue.isEmpty()) {
+			while (!queue.isEmpty()) 
+			{
 				try {
 					SmppSendingTask task = queue.take();
-					if (task != null) {
-						Exception ex = new InterruptedException(
-								"SMPP Sending Thread was stopped");
-						fireSendPduStatusEvent(EventsType.SEND_PDU_STATUS,
-								task.getSmppServerTransaction(),
-								task.getRequest(), task.getResponse(), ex,
-								false);
+					if (task != null) 
+					{
+						Exception ex = new InterruptedException("SMPP Sending Thread was stopped");
+						fireSendPduStatusEvent(EventsType.SEND_PDU_STATUS, task.getSmppServerTransaction(), task.getRequest(), task.getResponse(), ex, false);
 					}
-				} catch (InterruptedException e) {
-
+				} 
+				catch (InterruptedException e) 
+				{
 				}
 			}
 		}
@@ -536,45 +529,31 @@ public class SmppSessionsImpl implements SmppSessions {
 						DefaultSmppSession defaultSmppSession = task.getEsme()
 								.getSmppSession();
 						if (task.getResponse() == null) {
-							try {
-								defaultSmppSession.sendRequestPdu(
-										task.getRequest(),
-										task.getTimeoutMillis(), false);
-							} catch (RecoverablePduException
-									| UnrecoverablePduException
-									| SmppTimeoutException
-									| SmppChannelException
-									| InterruptedException e) {
-								fireSendPduStatusEvent(
-										EventsType.SEND_PDU_STATUS,
-										task.getSmppServerTransaction(),
-										task.getRequest(), task.getResponse(),
-										e, false);
+							try
+							{
+								defaultSmppSession.sendRequestPdu(task.getRequest(), task.getTimeoutMillis(), false);
+								fireSendPduStatusEvent(EventsType.SEND_PDU_STATUS, task.getSmppServerTransaction(), task.getRequest(), task.getResponse(), null, true);
+							} 
+							catch (RecoverablePduException | UnrecoverablePduException | SmppTimeoutException | SmppChannelException| InterruptedException e)
+							{
+								fireSendPduStatusEvent(EventsType.SEND_PDU_STATUS, task.getSmppServerTransaction(), task.getRequest(), task.getResponse(), e, false);
 							}
 						} else {
-							try {
-								defaultSmppSession.sendResponsePdu(task
-										.getResponse());
-							} catch (RecoverablePduException
-									| UnrecoverablePduException
-									| SmppChannelException
-									| InterruptedException e) {
-								fireSendPduStatusEvent(
-										EventsType.SEND_PDU_STATUS,
-										task.getSmppServerTransaction(),
-										task.getRequest(), task.getResponse(),
-										e, false);
-							} finally {
-								SmppSessionCounters smppSessionCounters = task
-										.getEsme().getSmppSession()
-										.getCounters();
-								SmppTransactionImpl smppTransactionImpl = (SmppTransactionImpl) task
-										.getRequest().getReferenceObject();
-								long responseTime = System.currentTimeMillis()
-										- smppTransactionImpl.getStartTime();
-								countSendResponsePdu(smppSessionCounters,
-										task.getResponse(), responseTime,
-										responseTime);
+							try
+							{
+								defaultSmppSession.sendResponsePdu(task.getResponse());
+								fireSendPduStatusEvent(EventsType.SEND_PDU_STATUS, task.getSmppServerTransaction(), task.getRequest(), task.getResponse(), null, true);
+							} 
+							catch (RecoverablePduException | UnrecoverablePduException | SmppChannelException | InterruptedException e) 
+							{
+								fireSendPduStatusEvent(EventsType.SEND_PDU_STATUS, task.getSmppServerTransaction(), task.getRequest(), task.getResponse(), e, false);
+							} 
+							finally 
+							{
+								SmppSessionCounters smppSessionCounters = task.getEsme().getSmppSession().getCounters();
+								SmppTransactionImpl smppTransactionImpl = (SmppTransactionImpl) task.getRequest().getReferenceObject();
+								long responseTime = System.currentTimeMillis() - smppTransactionImpl.getStartTime();
+								countSendResponsePdu(smppSessionCounters, task.getResponse(), responseTime, responseTime);
 
 								if (task.getSmppServerTransaction() == null) {
 									tracer.severe(String
@@ -586,11 +565,11 @@ public class SmppSessionsImpl implements SmppSessions {
 							}
 						}
 					}
-				} catch (InterruptedException e) {
+				}
+				catch (InterruptedException e) 
+				{
 					if (task != null)
-						fireSendPduStatusEvent(EventsType.SEND_PDU_STATUS,
-								task.getSmppServerTransaction(),
-								task.getRequest(), task.getResponse(), e, false);
+						fireSendPduStatusEvent(EventsType.SEND_PDU_STATUS, task.getSmppServerTransaction(), task.getRequest(), task.getResponse(), e, false);
 				}
 			}
 		}

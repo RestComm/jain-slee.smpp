@@ -23,8 +23,8 @@ public class SendPduStatus {
 
 	@Override
 	public String toString() {
-		return "FailureEvent [exception=" + exception + ", request=" + request
-				+ ", response=" + response + ", systemId=" + systemId + "]";
+		return "SendPduStatus [exception=" + exception + ", request=" + request
+				+ ", response=" + response + ", systemId=" + systemId + ", isSuccess" + isSuccess + "]";
 	}
 
 	public Throwable getException() {
