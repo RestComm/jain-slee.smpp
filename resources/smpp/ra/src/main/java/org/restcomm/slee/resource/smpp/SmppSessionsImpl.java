@@ -190,7 +190,7 @@ public class SmppSessionsImpl implements SmppSessions {
 				existingQueue.deactivate();		
 			}
 			
-			existingQueue.start();
+			esmeSender.start();
 			
 			return new SmppSessionHandlerImpl(esme);
 		}
