@@ -49,7 +49,7 @@ public class SmppSessionsImpl implements SmppSessions {
 
 	protected SmppSessionHandlerInterfaceImpl smppSessionHandlerInterfaceImpl = null;
 
-	private ConcurrentHashMap<String, SenderThread> esmeSenderThreads = new ConcurrentHashMap<>();
+	private ConcurrentHashMap<String, EsmeSender> esmeSenderThreads = new ConcurrentHashMap<>();
 
 	public SmppSessionsImpl(SmppServerResourceAdaptor smppServerResourceAdaptor) {
 		this.smppServerResourceAdaptor = smppServerResourceAdaptor;
@@ -77,8 +77,8 @@ public class SmppSessionsImpl implements SmppSessions {
 			throw new NullPointerException("Underlying SmppSession is Null!");
 		}
 
-		SenderThread sender = esmeSenderThreads.get(esme.getName());
-		if (sender == null) {
+		EsmeSender esmeSender = esmeSenderThreads.get(esme.getName());
+		if (esmeSender == null) {
 			throw new IllegalStateException("Esme sender not found");
 		}
 
@@ -96,7 +96,7 @@ public class SmppSessionsImpl implements SmppSessions {
 		smppServerResourceAdaptor.startNewSmppTransactionSuspendedActivity(smppServerTransaction);
 
 		SmppSendingTask task = new SmppSendingTask(esme, request, timeoutMillis, null, smppServerTransaction);
-		sender.offer(task);
+		esmeSender.offerRequest(task);
 
 		return smppServerTransaction;
 	}
@@ -112,8 +112,8 @@ public class SmppSessionsImpl implements SmppSessions {
 			throw new NullPointerException("Underlying SmppSession is Null!");
 		}
 
-		SenderThread sender = esmeSenderThreads.get(esme.getName());
-		if (sender == null) {
+		EsmeSender esmeSender = esmeSenderThreads.get(esme.getName());
+		if (esmeSender == null) {
 			throw new IllegalStateException("Esme sender not found");
 		}
 
@@ -123,7 +123,7 @@ public class SmppSessionsImpl implements SmppSessions {
 		}
 
 		SmppSendingTask task = new SmppSendingTask(esme, request, 0L, response, smppServerTransactionImpl);
-		sender.offer(task);
+		esmeSender.offerResponse(task);
 
 		// TODO Should it catch UnrecoverablePduException and
 		// SmppChannelException and close underlying SmppSession?
@@ -171,20 +171,26 @@ public class SmppSessionsImpl implements SmppSessions {
 
 		public void destroySmppSessionHandler(Esme esme) {
 			if (esme != null && esme.getName() != null) {
-				SenderThread senderThread = esmeSenderThreads.remove(esme
-						.getName());
-				if (senderThread != null)
-					senderThread.deactivate();
+				EsmeSender esmeSender = esmeSenderThreads.remove(esme.getName());
+				if (esmeSender != null) {
+					esmeSender.deactivate();
+				}
 			}
 		}
 
 		@Override
 		public SmppSessionHandler createNewSmppSessionHandler(Esme esme) {
 
-			SenderThread senderThread = new SenderThread("SMPP ESME Sender " + esme.getName());
-			SenderThread existingThread = esmeSenderThreads.putIfAbsent(esme.getName(), senderThread);
-			if (existingThread == null)
-				senderThread.start();			
+			SenderThread requestThread = new SenderThread("SMPP ESME Request Sender " + esme.getName());
+			SenderThread responseThread = new SenderThread("SMPP ESME Response Sender " + esme.getName());
+			EsmeSender esmeSender = new EsmeSender(requestThread, responseThread);
+			
+			EsmeSender existingQueue = esmeSenderThreads.put(esme.getName(), esmeSender);
+			if (existingQueue != null) {
+				existingQueue.deactivate();		
+			}
+			
+			existingQueue.start();
 			
 			return new SmppSessionHandlerImpl(esme);
 		}
@@ -494,7 +500,7 @@ public class SmppSessionsImpl implements SmppSessions {
 	public class SenderThread extends Thread {
 
 		private volatile Boolean running = true;
-		private LinkedBlockingQueue<SmppSendingTask> queue;
+		private LinkedBlockingQueue<SmppSendingTask> queue = new LinkedBlockingQueue<>();
 
 		public SenderThread(String name) {
 			super(name);
@@ -505,22 +511,16 @@ public class SmppSessionsImpl implements SmppSessions {
 			this.interrupt();
 			while (!queue.isEmpty()) 
 			{
-				try {
-					SmppSendingTask task = queue.take();
-					if (task != null) 
-					{
-						Exception ex = new InterruptedException("SMPP Sending Thread was stopped");
-						fireSendPduStatusEvent(EventsType.SEND_PDU_STATUS, task.getSmppServerTransaction(), task.getRequest(), task.getResponse(), ex, false);
-					}
-				} 
-				catch (InterruptedException e) 
+				SmppSendingTask task = queue.poll();
+				if (task != null) 
 				{
+					Exception ex = new InterruptedException(getName() + " was stopped");
+					fireSendPduStatusEvent(EventsType.SEND_PDU_STATUS, task.getSmppServerTransaction(), task.getRequest(), task.getResponse(), ex, false);
 				}
 			}
 		}
 
 		public void run() {
-			queue = new LinkedBlockingQueue<>();
 			while (running) {
 				SmppSendingTask task = null;
 				try {
@@ -559,17 +559,19 @@ public class SmppSessionsImpl implements SmppSessions {
 									tracer.severe(String
 											.format("SmppTransactionImpl Activity is null while trying to send PduResponse=%s",
 													task.getResponse()));
-								} else
+								} else {
 									smppServerResourceAdaptor.endActivity(task
 											.getSmppServerTransaction());
+								}
 							}
 						}
 					}
 				}
-				catch (InterruptedException e) 
+				catch (Exception e) 
 				{
-					if (task != null)
+					if (task != null) {
 						fireSendPduStatusEvent(EventsType.SEND_PDU_STATUS, task.getSmppServerTransaction(), task.getRequest(), task.getResponse(), e, false);
+					}
 				}
 			}
 		}
