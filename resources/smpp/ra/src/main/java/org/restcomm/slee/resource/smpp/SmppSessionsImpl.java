@@ -49,7 +49,7 @@ public class SmppSessionsImpl implements SmppSessions {
 
 	protected SmppSessionHandlerInterfaceImpl smppSessionHandlerInterfaceImpl = null;
 
-	private ConcurrentHashMap<String, EsmeSender> esmeSenderThreads = new ConcurrentHashMap<>();
+	private ConcurrentHashMap<String, EsmeSender> esmeSenderThreads = new ConcurrentHashMap();
 
 	public SmppSessionsImpl(SmppServerResourceAdaptor smppServerResourceAdaptor) {
 		this.smppServerResourceAdaptor = smppServerResourceAdaptor;
@@ -129,39 +129,6 @@ public class SmppSessionsImpl implements SmppSessions {
 		// SmppChannelException and close underlying SmppSession?
 	}
 
-	private void countSendResponsePdu(SmppSessionCounters counters, PduResponse pdu, long responseTime, long estimatedProcessingTime) {
-        if (pdu.isResponse()) {
-            switch (pdu.getCommandId()) {
-                case SmppConstants.CMD_ID_SUBMIT_SM_RESP:
-                    counters.getRxSubmitSM().incrementResponseAndGet();
-                    counters.getRxSubmitSM().addRequestResponseTimeAndGet(responseTime);
-                    counters.getRxSubmitSM().addRequestEstimatedProcessingTimeAndGet(estimatedProcessingTime);
-                    counters.getRxSubmitSM().getResponseCommandStatusCounter().incrementAndGet(pdu.getCommandStatus());
-                    break;
-                case SmppConstants.CMD_ID_DELIVER_SM_RESP:
-                    counters.getRxDeliverSM().incrementResponseAndGet();
-                    counters.getRxDeliverSM().addRequestResponseTimeAndGet(responseTime);
-                    counters.getRxDeliverSM().addRequestEstimatedProcessingTimeAndGet(estimatedProcessingTime);
-                    counters.getRxDeliverSM().getResponseCommandStatusCounter().incrementAndGet(pdu.getCommandStatus());
-                    break;
-                case SmppConstants.CMD_ID_DATA_SM_RESP:
-                    counters.getRxDataSM().incrementResponseAndGet();
-                    counters.getRxDataSM().addRequestResponseTimeAndGet(responseTime);
-                    counters.getRxDataSM().addRequestEstimatedProcessingTimeAndGet(estimatedProcessingTime);
-                    counters.getRxDataSM().getResponseCommandStatusCounter().incrementAndGet(pdu.getCommandStatus());
-                    break;
-                case SmppConstants.CMD_ID_ENQUIRE_LINK_RESP:
-                    counters.getRxEnquireLink().incrementResponseAndGet();
-                    counters.getRxEnquireLink().addRequestResponseTimeAndGet(responseTime);
-                    counters.getRxEnquireLink().addRequestEstimatedProcessingTimeAndGet(estimatedProcessingTime);
-                    counters.getRxEnquireLink().getResponseCommandStatusCounter().incrementAndGet(pdu.getCommandStatus());
-                    break;
-
-            // TODO: adding here statistics for SUBMIT_MULTI ?
-            }
-        }
-    }
-
 	protected class SmppSessionHandlerInterfaceImpl implements
 			SmppSessionHandlerInterface {
 
@@ -181,8 +148,8 @@ public class SmppSessionsImpl implements SmppSessions {
 		@Override
 		public SmppSessionHandler createNewSmppSessionHandler(Esme esme) {
 
-			SenderThread requestThread = new SenderThread("SMPP ESME Request Sender " + esme.getName());
-			SenderThread responseThread = new SenderThread("SMPP ESME Response Sender " + esme.getName());
+			SenderThread requestThread = new SenderThread("SMPP ESME Request Sender " + esme.getName(), tracer,smppServerResourceAdaptor);
+			SenderThread responseThread = new SenderThread("SMPP ESME Response Sender " + esme.getName(),tracer,smppServerResourceAdaptor);
 			EsmeSender esmeSender = new EsmeSender(requestThread, responseThread);
 			
 			EsmeSender existingQueue = esmeSenderThreads.put(esme.getName(), esmeSender);
@@ -497,110 +464,4 @@ public class SmppSessionsImpl implements SmppSessions {
 
 	}
 
-	public class SenderThread extends Thread {
-
-		private volatile Boolean running = true;
-		private LinkedBlockingQueue<SmppSendingTask> queue = new LinkedBlockingQueue<>();
-
-		public SenderThread(String name) {
-			super(name);
-		}
-
-		public void deactivate() {
-			running = false;
-			this.interrupt();
-			while (!queue.isEmpty()) 
-			{
-				SmppSendingTask task = queue.poll();
-				if (task != null) 
-				{
-					Exception ex = new InterruptedException(getName() + " was stopped");
-					fireSendPduStatusEvent(EventsType.SEND_PDU_STATUS, task.getSmppServerTransaction(), task.getRequest(), task.getResponse(), ex, false);
-				}
-			}
-		}
-
-		public void run() {
-			while (running) {
-				SmppSendingTask task = null;
-				try {
-					task = queue.take();
-					if (task != null) {
-						DefaultSmppSession defaultSmppSession = task.getEsme()
-								.getSmppSession();
-						if (task.getResponse() == null) {
-							try
-							{
-								defaultSmppSession.sendRequestPdu(task.getRequest(), task.getTimeoutMillis(), false);
-								fireSendPduStatusEvent(EventsType.SEND_PDU_STATUS, task.getSmppServerTransaction(), task.getRequest(), task.getResponse(), null, true);
-							} 
-							catch (RecoverablePduException | UnrecoverablePduException | SmppTimeoutException | SmppChannelException| InterruptedException e)
-							{
-								fireSendPduStatusEvent(EventsType.SEND_PDU_STATUS, task.getSmppServerTransaction(), task.getRequest(), task.getResponse(), e, false);
-							}
-						} else {
-							try
-							{
-								defaultSmppSession.sendResponsePdu(task.getResponse());
-								fireSendPduStatusEvent(EventsType.SEND_PDU_STATUS, task.getSmppServerTransaction(), task.getRequest(), task.getResponse(), null, true);
-							} 
-							catch (RecoverablePduException | UnrecoverablePduException | SmppChannelException | InterruptedException e) 
-							{
-								fireSendPduStatusEvent(EventsType.SEND_PDU_STATUS, task.getSmppServerTransaction(), task.getRequest(), task.getResponse(), e, false);
-							} 
-							finally 
-							{
-								SmppSessionCounters smppSessionCounters = task.getEsme().getSmppSession().getCounters();
-								SmppTransactionImpl smppTransactionImpl = (SmppTransactionImpl) task.getRequest().getReferenceObject();
-								long responseTime = System.currentTimeMillis() - smppTransactionImpl.getStartTime();
-								countSendResponsePdu(smppSessionCounters, task.getResponse(), responseTime, responseTime);
-
-								if (task.getSmppServerTransaction() == null) {
-									tracer.severe(String
-											.format("SmppTransactionImpl Activity is null while trying to send PduResponse=%s",
-													task.getResponse()));
-								} else {
-									smppServerResourceAdaptor.endActivity(task
-											.getSmppServerTransaction());
-								}
-							}
-						}
-					}
-				}
-				catch (Exception e) 
-				{
-					if (task != null) {
-						fireSendPduStatusEvent(EventsType.SEND_PDU_STATUS, task.getSmppServerTransaction(), task.getRequest(), task.getResponse(), e, false);
-					}
-				}
-			}
-		}
-
-		public void offer(SmppSendingTask task) {
-			queue.offer(task);
-		}
-	}
-
-	private void fireSendPduStatusEvent(String systemId,
-			SmppTransactionImpl smppServerTransaction, PduRequest request,
-			PduResponse response, Throwable exception, boolean status) {
-
-		SendPduStatus event = new SendPduStatus(exception, request, response,
-				systemId, status);
-
-		try {
-			smppServerResourceAdaptor.fireEvent(systemId,
-					smppServerTransaction.getActivityHandle(), event);
-		} catch (Exception e) {
-			tracer.severe(
-					String.format(
-							"Received fireRecoverablePduException. Error while processing RecoverablePduException=%s",
-							event), e);
-		} finally {
-			if (smppServerTransaction != null) {
-				smppServerResourceAdaptor.endActivity(smppServerTransaction);
-			}
-		}
-
-	}
 }

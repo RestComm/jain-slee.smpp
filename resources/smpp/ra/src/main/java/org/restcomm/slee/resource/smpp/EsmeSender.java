@@ -1,7 +1,5 @@
 package org.restcomm.slee.resource.smpp;
 
-import org.restcomm.slee.resource.smpp.SmppSessionsImpl.SenderThread;
-
 public class EsmeSender {
 	
 	private SenderThread requestThread;
