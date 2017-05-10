@@ -3,6 +3,7 @@ package org.restcomm.slee.resource.smpp;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import javax.slee.SLEEException;
 import javax.slee.facilities.Tracer;
@@ -43,93 +44,93 @@ import com.cloudhopper.smpp.type.UnrecoverablePduException;
  */
 public class SmppSessionsImpl implements SmppSessions {
 
-	private static Tracer tracer;
+    private static final long SMPP_REQUEST_TIMEOUT = 1000L;
+    private static final long SMPP_RESPONSE_TIMEOUT = 1000L;
 
-	private SmppServerResourceAdaptor smppServerResourceAdaptor = null;
+    private static Tracer tracer;
 
-	protected SmppSessionHandlerInterfaceImpl smppSessionHandlerInterfaceImpl = null;
+    private SmppServerResourceAdaptor smppServerResourceAdaptor = null;
 
-	private ConcurrentHashMap<String, EsmeSender> esmeSenderThreads = new ConcurrentHashMap<>();
+    protected SmppSessionHandlerInterfaceImpl smppSessionHandlerInterfaceImpl = null;
 
-	public SmppSessionsImpl(SmppServerResourceAdaptor smppServerResourceAdaptor) {
-		this.smppServerResourceAdaptor = smppServerResourceAdaptor;
-		if (tracer == null) {
-			tracer = this.smppServerResourceAdaptor.getRAContext().getTracer(
-					SmppSessionHandlerInterfaceImpl.class.getSimpleName());
-		}
-		this.smppSessionHandlerInterfaceImpl = new SmppSessionHandlerInterfaceImpl();
+    private ConcurrentHashMap<String, EsmeSender> esmeSenderThreads = new ConcurrentHashMap<String, EsmeSender>();
 
-	}
+    public SmppSessionsImpl(SmppServerResourceAdaptor smppServerResourceAdaptor) {
+        this.smppServerResourceAdaptor = smppServerResourceAdaptor;
+        if (tracer == null) {
+            tracer = this.smppServerResourceAdaptor.getRAContext().getTracer(
+                    SmppSessionHandlerInterfaceImpl.class.getSimpleName());
+        }
+        this.smppSessionHandlerInterfaceImpl = new SmppSessionHandlerInterfaceImpl();
 
-	protected SmppSessionHandlerInterface getSmppSessionHandlerInterface() {
-		return this.smppSessionHandlerInterfaceImpl;
-	}
+    }
 
-	@Override
-	public SmppTransaction sendRequestPdu(Esme esme, PduRequest request, long timeoutMillis) 
-			throws RecoverablePduException, UnrecoverablePduException, SmppTimeoutException, SmppChannelException, 
-			InterruptedException, ActivityAlreadyExistsException, NullPointerException, IllegalStateException,
-			SLEEException, StartActivityException {
+    protected SmppSessionHandlerInterface getSmppSessionHandlerInterface() {
+        return this.smppSessionHandlerInterfaceImpl;
+    }
 
-		DefaultSmppSession defaultSmppSession = esme.getSmppSession();
+    public SmppTransaction sendRequestPdu(Esme esme, PduRequest request, long timeoutMillis) throws RecoverablePduException,
+            UnrecoverablePduException, SmppTimeoutException, SmppChannelException, InterruptedException,
+            ActivityAlreadyExistsException, NullPointerException, IllegalStateException, SLEEException, StartActivityException {
 
-		if (defaultSmppSession == null) {
-			throw new NullPointerException("Underlying SmppSession is Null!");
-		}
+        DefaultSmppSession defaultSmppSession = esme.getSmppSession();
 
-		EsmeSender esmeSender = esmeSenderThreads.get(esme.getName());
-		if (esmeSender == null) {
-			throw new IllegalStateException("Esme sender not found");
-		}
+        if (defaultSmppSession == null) {
+            throw new NullPointerException("Underlying SmppSession is Null!");
+        }
 
-		if (!request.hasSequenceNumberAssigned()) {
-			// assign the next PDU sequence # if its not yet assigned
-			request.setSequenceNumber(defaultSmppSession.getSequenceNumber().next());
-		}
+        EsmeSender esmeSender = esmeSenderThreads.get(esme.getName());
+        if (esmeSender == null) {
+            throw new IllegalStateException("Esme sender not found");
+        }
 
-		SmppTransactionHandle smppServerTransactionHandle = new SmppTransactionHandle(esme.getName(), 
-				request.getSequenceNumber(), SmppTransactionType.OUTGOING);
+        if (!request.hasSequenceNumberAssigned()) {
+            // assign the next PDU sequence # if its not yet assigned
+            request.setSequenceNumber(defaultSmppSession.getSequenceNumber().next());
+        }
 
-		SmppTransactionImpl smppServerTransaction = new SmppTransactionImpl(request, esme, smppServerTransactionHandle, 
-				smppServerResourceAdaptor);
+        SmppTransactionHandle smppServerTransactionHandle = new SmppTransactionHandle(esme.getName(),
+                request.getSequenceNumber(), SmppTransactionType.OUTGOING);
 
-		smppServerResourceAdaptor.startNewSmppTransactionSuspendedActivity(smppServerTransaction);
+        SmppTransactionImpl smppServerTransaction = new SmppTransactionImpl(request, esme, smppServerTransactionHandle,
+                smppServerResourceAdaptor);
 
-		SmppSendingTask task = new SmppSendingTask(esme, request, timeoutMillis, null, smppServerTransaction);
-		esmeSender.offerRequest(task);
+        smppServerResourceAdaptor.startNewSmppTransactionSuspendedActivity(smppServerTransaction);
 
-		return smppServerTransaction;
-	}
+        SmppSendingTask task = new SmppSendingTask(esme, request, timeoutMillis, null, smppServerTransaction);
+        esmeSender.offerRequest(task);
 
-	@Override
-	public void sendResponsePdu(Esme esme, PduRequest request, PduResponse response) throws UnrecoverablePduException {
+        return smppServerTransaction;
+    }
 
-		SmppTransactionImpl smppServerTransactionImpl = (SmppTransactionImpl) request.getReferenceObject();
+    public void sendResponsePdu(Esme esme, PduRequest request, PduResponse response) throws UnrecoverablePduException {
 
-		DefaultSmppSession defaultSmppSession = esme.getSmppSession();
+        SmppTransactionImpl smppServerTransactionImpl = (SmppTransactionImpl) request.getReferenceObject();
 
-		if (defaultSmppSession == null) {
-			throw new NullPointerException("Underlying SmppSession is Null!");
-		}
+        DefaultSmppSession defaultSmppSession = esme.getSmppSession();
 
-		EsmeSender esmeSender = esmeSenderThreads.get(esme.getName());
-		if (esmeSender == null) {
-			throw new IllegalStateException("Esme sender not found");
-		}
+        if (defaultSmppSession == null) {
+            throw new NullPointerException("Underlying SmppSession is Null!");
+        }
 
-		if (request.getSequenceNumber() != response.getSequenceNumber()) {
-			throw new UnrecoverablePduException(
-					"Sequence number of response is not same as request");
-		}
+        EsmeSender esmeSender = esmeSenderThreads.get(esme.getName());
+        if (esmeSender == null) {
+            throw new IllegalStateException("Esme sender not found");
+        }
 
-		SmppSendingTask task = new SmppSendingTask(esme, request, 0L, response, smppServerTransactionImpl);
-		esmeSender.offerResponse(task);
+        if (request.getSequenceNumber() != response.getSequenceNumber()) {
+            throw new UnrecoverablePduException("Sequence number of response is not same as request");
+        }
 
-		// TODO Should it catch UnrecoverablePduException and
-		// SmppChannelException and close underlying SmppSession?
-	}
+        SmppSendingTask task = new SmppSendingTask(esme, request, 0L, response, smppServerTransactionImpl);
+        esmeSender.offerResponse(task);
 
-	private void countSendResponsePdu(SmppSessionCounters counters, PduResponse pdu, long responseTime, long estimatedProcessingTime) {
+        // TODO Should it catch UnrecoverablePduException and
+        // SmppChannelException and close underlying SmppSession?
+    }
+
+    private void countSendResponsePdu(SmppSessionCounters counters, PduResponse pdu, long responseTime,
+            long estimatedProcessingTime) {
         if (pdu.isResponse()) {
             switch (pdu.getCommandId()) {
                 case SmppConstants.CMD_ID_SUBMIT_SM_RESP:
@@ -162,182 +163,182 @@ public class SmppSessionsImpl implements SmppSessions {
         }
     }
 
-	protected class SmppSessionHandlerInterfaceImpl implements
-			SmppSessionHandlerInterface {
+    protected class SmppSessionHandlerInterfaceImpl implements SmppSessionHandlerInterface {
 
-		public SmppSessionHandlerInterfaceImpl() {
+        public SmppSessionHandlerInterfaceImpl() {
 
-		}
+        }
 
-		public void destroySmppSessionHandler(Esme esme) {
-			if (esme != null && esme.getName() != null) {
-				EsmeSender esmeSender = esmeSenderThreads.remove(esme.getName());
-				if (esmeSender != null) {
-					esmeSender.deactivate();
-				}
-			}
-		}
+        public void destroySmppSessionHandler(Esme esme) {
+            if (esme != null && esme.getName() != null) {
+                EsmeSender esmeSender = esmeSenderThreads.remove(esme.getName());
+                if (esmeSender != null) {
+                    esmeSender.deactivate();
+                }
+            }
+        }
 
-		@Override
-		public SmppSessionHandler createNewSmppSessionHandler(Esme esme) {
+        @Override
+        public SmppSessionHandler createNewSmppSessionHandler(Esme esme) {
 
-			SenderThread requestThread = new SenderThread("SMPP ESME Request Sender " + esme.getName());
-			SenderThread responseThread = new SenderThread("SMPP ESME Response Sender " + esme.getName());
-			EsmeSender esmeSender = new EsmeSender(requestThread, responseThread);
-			
-			EsmeSender existingQueue = esmeSenderThreads.put(esme.getName(), esmeSender);
-			if (existingQueue != null) {
-				existingQueue.deactivate();		
-			}
-			
-			esmeSender.start();
-			
-			return new SmppSessionHandlerImpl(esme);
-		}
-	}
+            RequestSender requestThread = new RequestSender("SMPP ESME Request Sender " + esme.getName(), SMPP_REQUEST_TIMEOUT);
+            ResponseSender responseThread = new ResponseSender("SMPP ESME Response Sender " + esme.getName(),
+                    SMPP_RESPONSE_TIMEOUT);
+            EsmeSender esmeSender = new EsmeSender(requestThread, responseThread);
 
-	protected class SmppSessionHandlerImpl implements SmppSessionHandler {
-		private Esme esme;
+            EsmeSender existingQueue = esmeSenderThreads.put(esme.getName(), esmeSender);
+            if (existingQueue != null) {
+                existingQueue.deactivate();
+            }
 
-		public SmppSessionHandlerImpl(Esme esme) {
-			this.esme = esme;
-		}
+            esmeSender.start();
 
-		@Override
-		public PduResponse firePduRequestReceived(PduRequest pduRequest) {
-			
-			PduResponse response = pduRequest.createResponse();
-			try {
-				SmppTransactionImpl smppServerTransaction = null;
-				SmppTransactionHandle smppServerTransactionHandle = null;
-				Address sourceAddress = null;
-				switch (pduRequest.getCommandId()) {
-				case SmppConstants.CMD_ID_ENQUIRE_LINK:
-					break;
-				case SmppConstants.CMD_ID_UNBIND:
-					break;
-				case SmppConstants.CMD_ID_SUBMIT_SM:
-					SubmitSm submitSm = (SubmitSm) pduRequest;
-					sourceAddress = submitSm.getSourceAddress();
-					if (!this.esme.isSourceAddressMatching(sourceAddress)) {
-						tracer.warning(String
-								.format("Incoming SUBMIT_SM's sequence_number=%d source_addr_ton=%d source_addr_npi=%d source_addr=%s doesn't match with configured ESME name=%s source_addr_ton=%d source_addr_npi=%d source_addr=%s",
-										submitSm.getSequenceNumber(), sourceAddress.getTon(), sourceAddress.getNpi(),
-										sourceAddress.getAddress(), this.esme.getName(), this.esme.getSourceTon(),
-										this.esme.getSourceNpi(), this.esme.getSourceAddressRange()));
+            return new SmppSessionHandlerImpl(esme);
+        }
+    }
 
-						response.setCommandStatus(SmppConstants.STATUS_INVSRCADR);
-						return response;
-					}
+    protected class SmppSessionHandlerImpl implements SmppSessionHandler {
+        private Esme esme;
 
-					smppServerTransactionHandle = new SmppTransactionHandle(this.esme.getName(),
-							pduRequest.getSequenceNumber(), SmppTransactionType.INCOMING);
-					smppServerTransaction = new SmppTransactionImpl(pduRequest, this.esme, smppServerTransactionHandle,
-							smppServerResourceAdaptor);
+        public SmppSessionHandlerImpl(Esme esme) {
+            this.esme = esme;
+        }
 
-					smppServerResourceAdaptor.startNewSmppServerTransactionActivity(smppServerTransaction);
-					smppServerResourceAdaptor.fireEvent(EventsType.SUBMIT_SM,
-							smppServerTransaction.getActivityHandle(), submitSm);
+        @Override
+        public PduResponse firePduRequestReceived(PduRequest pduRequest) {
 
-					// Return null. Let SBB send response back
-					return null;
-				case SmppConstants.CMD_ID_DATA_SM:
-					DataSm dataSm = (DataSm) pduRequest;
-					sourceAddress = dataSm.getSourceAddress();
-					if (!this.esme.isSourceAddressMatching(sourceAddress)) {
-						tracer.warning(String
-								.format("Incoming DATA_SM's sequence_number=%d source_addr_ton=%d source_addr_npi=%d source_addr=%s doesn't match with configured ESME name=%s source_addr_ton=%d source_addr_npi=%d source_addr=%s",
-										dataSm.getSequenceNumber(), sourceAddress.getTon(), sourceAddress.getNpi(),
-										sourceAddress.getAddress(), this.esme.getName(), this.esme.getSourceTon(),
-										this.esme.getSourceNpi(), this.esme.getSourceAddressRange()));
+            PduResponse response = pduRequest.createResponse();
+            try {
+                SmppTransactionImpl smppServerTransaction = null;
+                SmppTransactionHandle smppServerTransactionHandle = null;
+                Address sourceAddress = null;
+                switch (pduRequest.getCommandId()) {
+                    case SmppConstants.CMD_ID_ENQUIRE_LINK:
+                        break;
+                    case SmppConstants.CMD_ID_UNBIND:
+                        break;
+                    case SmppConstants.CMD_ID_SUBMIT_SM:
+                        SubmitSm submitSm = (SubmitSm) pduRequest;
+                        sourceAddress = submitSm.getSourceAddress();
+                        if (!this.esme.isSourceAddressMatching(sourceAddress)) {
+                            tracer.warning(String
+                                    .format("Incoming SUBMIT_SM's sequence_number=%d source_addr_ton=%d source_addr_npi=%d source_addr=%s doesn't match with configured ESME name=%s source_addr_ton=%d source_addr_npi=%d source_addr=%s",
+                                            submitSm.getSequenceNumber(), sourceAddress.getTon(), sourceAddress.getNpi(),
+                                            sourceAddress.getAddress(), this.esme.getName(), this.esme.getSourceTon(),
+                                            this.esme.getSourceNpi(), this.esme.getSourceAddressRange()));
 
-						response.setCommandStatus(SmppConstants.STATUS_INVSRCADR);
-						return response;
-					}
+                            response.setCommandStatus(SmppConstants.STATUS_INVSRCADR);
+                            return response;
+                        }
 
-					smppServerTransactionHandle = new SmppTransactionHandle(this.esme.getName(),
-							pduRequest.getSequenceNumber(), SmppTransactionType.INCOMING);
-					smppServerTransaction = new SmppTransactionImpl(pduRequest, this.esme, smppServerTransactionHandle,
-							smppServerResourceAdaptor);
-					smppServerResourceAdaptor.startNewSmppServerTransactionActivity(smppServerTransaction);
-					smppServerResourceAdaptor.fireEvent(EventsType.DATA_SM, smppServerTransaction.getActivityHandle(),
-							(DataSm) pduRequest);
+                        smppServerTransactionHandle = new SmppTransactionHandle(this.esme.getName(),
+                                pduRequest.getSequenceNumber(), SmppTransactionType.INCOMING);
+                        smppServerTransaction = new SmppTransactionImpl(pduRequest, this.esme, smppServerTransactionHandle,
+                                smppServerResourceAdaptor);
 
-					// Return null. Let SBB send response back
-					return null;
-				case SmppConstants.CMD_ID_DELIVER_SM:
-					DeliverSm deliverSm = (DeliverSm) pduRequest;
-					sourceAddress = deliverSm.getSourceAddress();
-					if (!this.esme.isSourceAddressMatching(sourceAddress)) {
-						tracer.warning(String
-								.format("Incoming DELIVER_SM's sequence_number=%d source_addr_ton=%d source_addr_npi=%d source_addr=%s doesn't match with configured ESME name=%s source_addr_ton=%d source_addr_npi=%d source_addr=%s",
-										deliverSm.getSequenceNumber(), sourceAddress.getTon(), sourceAddress.getNpi(),
-										sourceAddress.getAddress(), this.esme.getName(), this.esme.getSourceTon(),
-										this.esme.getSourceNpi(), this.esme.getSourceAddressRange()));
+                        smppServerResourceAdaptor.startNewSmppServerTransactionActivity(smppServerTransaction);
+                        smppServerResourceAdaptor.fireEvent(EventsType.SUBMIT_SM, smppServerTransaction.getActivityHandle(),
+                                submitSm);
 
-						response.setCommandStatus(SmppConstants.STATUS_INVSRCADR);
-						return response;
-					}
+                        // Return null. Let SBB send response back
+                        return null;
+                    case SmppConstants.CMD_ID_DATA_SM:
+                        DataSm dataSm = (DataSm) pduRequest;
+                        sourceAddress = dataSm.getSourceAddress();
+                        if (!this.esme.isSourceAddressMatching(sourceAddress)) {
+                            tracer.warning(String
+                                    .format("Incoming DATA_SM's sequence_number=%d source_addr_ton=%d source_addr_npi=%d source_addr=%s doesn't match with configured ESME name=%s source_addr_ton=%d source_addr_npi=%d source_addr=%s",
+                                            dataSm.getSequenceNumber(), sourceAddress.getTon(), sourceAddress.getNpi(),
+                                            sourceAddress.getAddress(), this.esme.getName(), this.esme.getSourceTon(),
+                                            this.esme.getSourceNpi(), this.esme.getSourceAddressRange()));
 
-					smppServerTransactionHandle = new SmppTransactionHandle(this.esme.getName(),
-							pduRequest.getSequenceNumber(), SmppTransactionType.INCOMING);
-					smppServerTransaction = new SmppTransactionImpl(pduRequest, this.esme, smppServerTransactionHandle,
-							smppServerResourceAdaptor);
-					smppServerResourceAdaptor.startNewSmppServerTransactionActivity(smppServerTransaction);
-					smppServerResourceAdaptor.fireEvent(EventsType.DELIVER_SM,
-							smppServerTransaction.getActivityHandle(), (DeliverSm) pduRequest);
-					return null;
+                            response.setCommandStatus(SmppConstants.STATUS_INVSRCADR);
+                            return response;
+                        }
 
-                case SmppConstants.CMD_ID_SUBMIT_MULTI:
-                    SubmitMulti submitMulti = (SubmitMulti) pduRequest;
-                    sourceAddress = submitMulti.getSourceAddress();
-                    if (!this.esme.isSourceAddressMatching(sourceAddress)) {
-                        tracer.warning(String
-                                .format("Incoming SUBMIT_MULTI's sequence_number=%d source_addr_ton=%d source_addr_npi=%d source_addr=%s doesn't match with configured ESME name=%s source_addr_ton=%d source_addr_npi=%d source_addr=%s",
-                                        submitMulti.getSequenceNumber(), sourceAddress.getTon(), sourceAddress.getNpi(),
-                                        sourceAddress.getAddress(), this.esme.getName(), this.esme.getSourceTon(),
-                                        this.esme.getSourceNpi(), this.esme.getSourceAddressRange()));
+                        smppServerTransactionHandle = new SmppTransactionHandle(this.esme.getName(),
+                                pduRequest.getSequenceNumber(), SmppTransactionType.INCOMING);
+                        smppServerTransaction = new SmppTransactionImpl(pduRequest, this.esme, smppServerTransactionHandle,
+                                smppServerResourceAdaptor);
+                        smppServerResourceAdaptor.startNewSmppServerTransactionActivity(smppServerTransaction);
+                        smppServerResourceAdaptor.fireEvent(EventsType.DATA_SM, smppServerTransaction.getActivityHandle(),
+                                (DataSm) pduRequest);
 
-                        response.setCommandStatus(SmppConstants.STATUS_INVSRCADR);
-                        return response;
-                    }
+                        // Return null. Let SBB send response back
+                        return null;
+                    case SmppConstants.CMD_ID_DELIVER_SM:
+                        DeliverSm deliverSm = (DeliverSm) pduRequest;
+                        sourceAddress = deliverSm.getSourceAddress();
+                        if (!this.esme.isSourceAddressMatching(sourceAddress)) {
+                            tracer.warning(String
+                                    .format("Incoming DELIVER_SM's sequence_number=%d source_addr_ton=%d source_addr_npi=%d source_addr=%s doesn't match with configured ESME name=%s source_addr_ton=%d source_addr_npi=%d source_addr=%s",
+                                            deliverSm.getSequenceNumber(), sourceAddress.getTon(), sourceAddress.getNpi(),
+                                            sourceAddress.getAddress(), this.esme.getName(), this.esme.getSourceTon(),
+                                            this.esme.getSourceNpi(), this.esme.getSourceAddressRange()));
 
-                    smppServerTransactionHandle = new SmppTransactionHandle(this.esme.getName(),
-                            pduRequest.getSequenceNumber(), SmppTransactionType.INCOMING);
-                    smppServerTransaction = new SmppTransactionImpl(pduRequest, this.esme, smppServerTransactionHandle,
-                            smppServerResourceAdaptor);
+                            response.setCommandStatus(SmppConstants.STATUS_INVSRCADR);
+                            return response;
+                        }
 
-                    smppServerResourceAdaptor.startNewSmppServerTransactionActivity(smppServerTransaction);
-                    smppServerResourceAdaptor.fireEvent(EventsType.SUBMIT_MULTI,
-                            smppServerTransaction.getActivityHandle(), submitMulti);
+                        smppServerTransactionHandle = new SmppTransactionHandle(this.esme.getName(),
+                                pduRequest.getSequenceNumber(), SmppTransactionType.INCOMING);
+                        smppServerTransaction = new SmppTransactionImpl(pduRequest, this.esme, smppServerTransactionHandle,
+                                smppServerResourceAdaptor);
+                        smppServerResourceAdaptor.startNewSmppServerTransactionActivity(smppServerTransaction);
+                        smppServerResourceAdaptor.fireEvent(EventsType.DELIVER_SM, smppServerTransaction.getActivityHandle(),
+                                (DeliverSm) pduRequest);
+                        return null;
 
-                    // Return null. Let SBB send response back
-                    return null;
+                    case SmppConstants.CMD_ID_SUBMIT_MULTI:
+                        SubmitMulti submitMulti = (SubmitMulti) pduRequest;
+                        sourceAddress = submitMulti.getSourceAddress();
+                        if (!this.esme.isSourceAddressMatching(sourceAddress)) {
+                            tracer.warning(String
+                                    .format("Incoming SUBMIT_MULTI's sequence_number=%d source_addr_ton=%d source_addr_npi=%d source_addr=%s doesn't match with configured ESME name=%s source_addr_ton=%d source_addr_npi=%d source_addr=%s",
+                                            submitMulti.getSequenceNumber(), sourceAddress.getTon(), sourceAddress.getNpi(),
+                                            sourceAddress.getAddress(), this.esme.getName(), this.esme.getSourceTon(),
+                                            this.esme.getSourceNpi(), this.esme.getSourceAddressRange()));
 
-                default:
-					tracer.severe(String.format("Rx : Non supported PduRequest=%s. Will not fire event", pduRequest));
-					break;
-				}
-			} catch (Exception e) {
-				tracer.severe(String.format("Error while processing PduRequest=%s", pduRequest), e);
-				response.setCommandStatus(SmppConstants.STATUS_SYSERR);
-			}
+                            response.setCommandStatus(SmppConstants.STATUS_INVSRCADR);
+                            return response;
+                        }
 
-			return response;
-		}
+                        smppServerTransactionHandle = new SmppTransactionHandle(this.esme.getName(),
+                                pduRequest.getSequenceNumber(), SmppTransactionType.INCOMING);
+                        smppServerTransaction = new SmppTransactionImpl(pduRequest, this.esme, smppServerTransactionHandle,
+                                smppServerResourceAdaptor);
 
-		@Override
-		public String lookupResultMessage(int arg0) {
-			return null;
-		}
+                        smppServerResourceAdaptor.startNewSmppServerTransactionActivity(smppServerTransaction);
+                        smppServerResourceAdaptor.fireEvent(EventsType.SUBMIT_MULTI, smppServerTransaction.getActivityHandle(),
+                                submitMulti);
 
-		@Override
-		public String lookupTlvTagName(short arg0) {
-			return null;
-		}
+                        // Return null. Let SBB send response back
+                        return null;
 
-		@Override
-		public void fireChannelUnexpectedlyClosed() {
+                    default:
+                        tracer.severe(String.format("Rx : Non supported PduRequest=%s. Will not fire event", pduRequest));
+                        break;
+                }
+            } catch (Exception e) {
+                tracer.severe(String.format("Error while processing PduRequest=%s", pduRequest), e);
+                response.setCommandStatus(SmppConstants.STATUS_SYSERR);
+            }
+
+            return response;
+        }
+
+        @Override
+        public String lookupResultMessage(int arg0) {
+            return null;
+        }
+
+        @Override
+        public String lookupTlvTagName(short arg0) {
+            return null;
+        }
+
+        @Override
+        public void fireChannelUnexpectedlyClosed() {
             tracer.severe(String
                     .format("Rx : fireChannelUnexpectedlyClosed for SmppSessionImpl=%s Default handling is to discard an unexpected channel closed",
                             this.esme.getName()));
@@ -352,130 +353,130 @@ public class SmppSessionsImpl implements SmppSessions {
                         + future.getRequest().toString());
                 defaultSession.expired(future);
             }
-		}
+        }
 
-		@Override
-		public void fireExpectedPduResponseReceived(PduAsyncResponse pduAsyncResponse) {
+        @Override
+        public void fireExpectedPduResponseReceived(PduAsyncResponse pduAsyncResponse) {
 
-			PduRequest pduRequest = pduAsyncResponse.getRequest();
-			PduResponse pduResponse = pduAsyncResponse.getResponse();
+            PduRequest pduRequest = pduAsyncResponse.getRequest();
+            PduResponse pduResponse = pduAsyncResponse.getResponse();
 
-			SmppTransactionImpl smppServerTransaction = (SmppTransactionImpl) pduRequest.getReferenceObject();
+            SmppTransactionImpl smppServerTransaction = (SmppTransactionImpl) pduRequest.getReferenceObject();
 
-			if (smppServerTransaction == null) {
-				tracer.severe(String
-						.format("Rx : fireExpectedPduResponseReceived for SmppSessionImpl=%s PduAsyncResponse=%s but SmppTransactionImpl is null",
-								this.esme.getName(), pduAsyncResponse));
-				return;
-			}
+            if (smppServerTransaction == null) {
+                tracer.severe(String
+                        .format("Rx : fireExpectedPduResponseReceived for SmppSessionImpl=%s PduAsyncResponse=%s but SmppTransactionImpl is null",
+                                this.esme.getName(), pduAsyncResponse));
+                return;
+            }
 
-			try {
-				switch (pduResponse.getCommandId()) {
-				case SmppConstants.CMD_ID_DELIVER_SM_RESP:
-					smppServerResourceAdaptor.fireEvent(EventsType.DELIVER_SM_RESP,
-							smppServerTransaction.getActivityHandle(), (DeliverSmResp) pduResponse);
-					break;
-				case SmppConstants.CMD_ID_DATA_SM_RESP:
-					smppServerResourceAdaptor.fireEvent(EventsType.DATA_SM_RESP,
-							smppServerTransaction.getActivityHandle(), (DataSmResp) pduResponse);
-					break;
-                case SmppConstants.CMD_ID_SUBMIT_SM_RESP:
-                    smppServerResourceAdaptor.fireEvent(EventsType.SUBMIT_SM_RESP,
-                            smppServerTransaction.getActivityHandle(), (SubmitSmResp) pduResponse);
-                    break;
-                case SmppConstants.CMD_ID_SUBMIT_MULTI_RESP:
-                    smppServerResourceAdaptor.fireEvent(EventsType.SUBMIT_MULTI_RESP,
-                            smppServerTransaction.getActivityHandle(), (SubmitMultiResp) pduResponse);
-                    break;
-				default:
-					tracer.severe(String
-							.format("Rx : fireExpectedPduResponseReceived for SmppSessionImpl=%s PduAsyncResponse=%s but PduResponse is unidentified. Event will not be fired ",
-									this.esme.getName(), pduAsyncResponse));
-					break;
-				}
+            try {
+                switch (pduResponse.getCommandId()) {
+                    case SmppConstants.CMD_ID_DELIVER_SM_RESP:
+                        smppServerResourceAdaptor.fireEvent(EventsType.DELIVER_SM_RESP,
+                                smppServerTransaction.getActivityHandle(), (DeliverSmResp) pduResponse);
+                        break;
+                    case SmppConstants.CMD_ID_DATA_SM_RESP:
+                        smppServerResourceAdaptor.fireEvent(EventsType.DATA_SM_RESP, smppServerTransaction.getActivityHandle(),
+                                (DataSmResp) pduResponse);
+                        break;
+                    case SmppConstants.CMD_ID_SUBMIT_SM_RESP:
+                        smppServerResourceAdaptor.fireEvent(EventsType.SUBMIT_SM_RESP,
+                                smppServerTransaction.getActivityHandle(), (SubmitSmResp) pduResponse);
+                        break;
+                    case SmppConstants.CMD_ID_SUBMIT_MULTI_RESP:
+                        smppServerResourceAdaptor.fireEvent(EventsType.SUBMIT_MULTI_RESP,
+                                smppServerTransaction.getActivityHandle(), (SubmitMultiResp) pduResponse);
+                        break;
+                    default:
+                        tracer.severe(String
+                                .format("Rx : fireExpectedPduResponseReceived for SmppSessionImpl=%s PduAsyncResponse=%s but PduResponse is unidentified. Event will not be fired ",
+                                        this.esme.getName(), pduAsyncResponse));
+                        break;
+                }
 
-			} catch (Exception e) {
-				tracer.severe(String.format("Error while processing PduAsyncResponse=%s", pduAsyncResponse), e);
-			} finally {
-				if (smppServerTransaction != null) {
-					smppServerResourceAdaptor.endActivity(smppServerTransaction);
-				}
-			}
-		}
+            } catch (Exception e) {
+                tracer.severe(String.format("Error while processing PduAsyncResponse=%s", pduAsyncResponse), e);
+            } finally {
+                if (smppServerTransaction != null) {
+                    smppServerResourceAdaptor.endActivity(smppServerTransaction);
+                }
+            }
+        }
 
-		@Override
-		public void firePduRequestExpired(PduRequest pduRequest) {
-			tracer.warning(String.format("PduRequestExpired=%s", pduRequest));
+        @Override
+        public void firePduRequestExpired(PduRequest pduRequest) {
+            tracer.warning(String.format("PduRequestExpired=%s", pduRequest));
 
-			SmppTransactionImpl smppServerTransaction = (SmppTransactionImpl) pduRequest.getReferenceObject();
+            SmppTransactionImpl smppServerTransaction = (SmppTransactionImpl) pduRequest.getReferenceObject();
 
-			if (smppServerTransaction == null) {
-				tracer.severe(String
-						.format("Rx : firePduRequestExpired for SmppSessionImpl=%s PduRequest=%s but SmppTransactionImpl is null",
-								this.esme.getName(), pduRequest));
-				return;
-			}
+            if (smppServerTransaction == null) {
+                tracer.severe(String.format(
+                        "Rx : firePduRequestExpired for SmppSessionImpl=%s PduRequest=%s but SmppTransactionImpl is null",
+                        this.esme.getName(), pduRequest));
+                return;
+            }
 
-			PduRequestTimeout event = new PduRequestTimeout(pduRequest, this.esme.getName());
+            PduRequestTimeout event = new PduRequestTimeout(pduRequest, this.esme.getName());
 
-			try {
-				smppServerResourceAdaptor.fireEvent(EventsType.REQUEST_TIMEOUT,
-						smppServerTransaction.getActivityHandle(), event);
-			} catch (Exception e) {
-				tracer.severe(String.format("Received firePduRequestExpired. Error while processing PduRequest=%s",
-						pduRequest), e);
-			} finally {
-				if (smppServerTransaction != null) {
+            try {
+                smppServerResourceAdaptor.fireEvent(EventsType.REQUEST_TIMEOUT, smppServerTransaction.getActivityHandle(),
+                        event);
+            } catch (Exception e) {
+                tracer.severe(
+                        String.format("Received firePduRequestExpired. Error while processing PduRequest=%s", pduRequest), e);
+            } finally {
+                if (smppServerTransaction != null) {
                     smppServerResourceAdaptor.endActivity(smppServerTransaction);
                     pduRequest.setReferenceObject(null);
                 }
-			}
-		}
+            }
+        }
 
-		@Override
-		public void fireRecoverablePduException(RecoverablePduException recoverablePduException) {
-			tracer.warning("Received fireRecoverablePduException", recoverablePduException);
+        @Override
+        public void fireRecoverablePduException(RecoverablePduException recoverablePduException) {
+            tracer.warning("Received fireRecoverablePduException", recoverablePduException);
 
-			Pdu partialPdu = recoverablePduException.getPartialPdu();
+            Pdu partialPdu = recoverablePduException.getPartialPdu();
 
-			SmppTransactionImpl smppServerTransaction = (SmppTransactionImpl) partialPdu.getReferenceObject();
+            SmppTransactionImpl smppServerTransaction = (SmppTransactionImpl) partialPdu.getReferenceObject();
 
-			if (smppServerTransaction == null) {
-				tracer.severe(String.format(
-						"Rx : fireRecoverablePduException for SmppSessionImpl=%s but SmppTransactionImpl is null",
-						this.esme.getName()), recoverablePduException);
-				return;
-			}
+            if (smppServerTransaction == null) {
+                tracer.severe(String.format(
+                        "Rx : fireRecoverablePduException for SmppSessionImpl=%s but SmppTransactionImpl is null",
+                        this.esme.getName()), recoverablePduException);
+                return;
+            }
 
-			try {
-				smppServerResourceAdaptor.fireEvent(EventsType.RECOVERABLE_PDU_EXCEPTION,
-						smppServerTransaction.getActivityHandle(), recoverablePduException);
-			} catch (Exception e) {
-				tracer.severe(String.format(
-						"Received fireRecoverablePduException. Error while processing RecoverablePduException=%s",
-						recoverablePduException), e);
-			} finally {
-				if (smppServerTransaction != null) {
-					smppServerResourceAdaptor.endActivity(smppServerTransaction);
-				}
-			}
+            try {
+                smppServerResourceAdaptor.fireEvent(EventsType.RECOVERABLE_PDU_EXCEPTION,
+                        smppServerTransaction.getActivityHandle(), recoverablePduException);
+            } catch (Exception e) {
+                tracer.severe(String.format(
+                        "Received fireRecoverablePduException. Error while processing RecoverablePduException=%s",
+                        recoverablePduException), e);
+            } finally {
+                if (smppServerTransaction != null) {
+                    smppServerResourceAdaptor.endActivity(smppServerTransaction);
+                }
+            }
 
-		}
+        }
 
-		@Override
-		public void fireUnrecoverablePduException(UnrecoverablePduException unrecoverablePduException) {
-			tracer.severe("Received fireUnrecoverablePduException", unrecoverablePduException);
+        @Override
+        public void fireUnrecoverablePduException(UnrecoverablePduException unrecoverablePduException) {
+            tracer.severe("Received fireUnrecoverablePduException", unrecoverablePduException);
 
-			// TODO : recommendation is to close session
-		}
+            // TODO : recommendation is to close session
+        }
 
-		@Override
-		public void fireUnexpectedPduResponseReceived(PduResponse pduResponse) {
-			tracer.severe("Received fireUnexpectedPduResponseReceived PduResponse=" + pduResponse);
-		}
+        @Override
+        public void fireUnexpectedPduResponseReceived(PduResponse pduResponse) {
+            tracer.severe("Received fireUnexpectedPduResponseReceived PduResponse=" + pduResponse);
+        }
 
-		@Override
-		public void fireUnknownThrowable(Throwable throwable) {
+        @Override
+        public void fireUnknownThrowable(Throwable throwable) {
             DefaultSmppSession defaultSession = esme.getSmppSession();
 
             // firing of onPduRequestTimeout() for sent messages for which we do not have responses
@@ -492,115 +493,160 @@ public class SmppSessionsImpl implements SmppSessions {
                 tracer.severe("Received fireUnknownThrowable with undifined defaultSession: ", throwable);
             }
 
-			// TODO what here?
-		}
+            // TODO what here?
+        }
 
-	}
+    }
 
-	public class SenderThread extends Thread {
+    public class RequestSender extends Thread {
 
-		private volatile Boolean running = true;
-		private LinkedBlockingQueue<SmppSendingTask> queue = new LinkedBlockingQueue<>();
+        private volatile Boolean running = true;
+        private LinkedBlockingQueue<SmppSendingTask> queue = new LinkedBlockingQueue<SmppSendingTask>();
+        private long timeout;
 
-		public SenderThread(String name) {
-			super(name);
-		}
+        public RequestSender(String name, long timeout) {
+            super(name);
+            this.timeout = timeout;
+        }
 
-		public void deactivate() {
-			running = false;
-			this.interrupt();
-			while (!queue.isEmpty()) 
-			{
-				SmppSendingTask task = queue.poll();
-				if (task != null) 
-				{
-					Exception ex = new InterruptedException(getName() + " was stopped");
-					fireSendPduStatusEvent(EventsType.SEND_PDU_STATUS, task.getSmppServerTransaction(), task.getRequest(), task.getResponse(), ex, false);
-				}
-			}
-		}
+        public void deactivate() {
+            running = false;
+            this.interrupt();
+            while (!queue.isEmpty()) {
+                SmppSendingTask task = queue.poll();
+                if (task != null) {
+                    Exception ex = new InterruptedException(getName() + " was stopped");
+                    fireSendPduStatusEvent(EventsType.SEND_PDU_STATUS, task.getSmppServerTransaction(), task.getRequest(),
+                            task.getResponse(), ex, false);
+                }
+            }
+        }
 
-		public void run() {
-			while (running) {
-				SmppSendingTask task = null;
-				try {
-					task = queue.take();
-					if (task != null) {
-						DefaultSmppSession defaultSmppSession = task.getEsme()
-								.getSmppSession();
-						if (task.getResponse() == null) {
-							try
-							{
-								defaultSmppSession.sendRequestPdu(task.getRequest(), task.getTimeoutMillis(), false);
-								fireSendPduStatusEvent(EventsType.SEND_PDU_STATUS, task.getSmppServerTransaction(), task.getRequest(), task.getResponse(), null, true);
-							} 
-							catch (RecoverablePduException | UnrecoverablePduException | SmppTimeoutException | SmppChannelException| InterruptedException e)
-							{
-								fireSendPduStatusEvent(EventsType.SEND_PDU_STATUS, task.getSmppServerTransaction(), task.getRequest(), task.getResponse(), e, false);
-							}
-						} else {
-							try
-							{
-								defaultSmppSession.sendResponsePdu(task.getResponse());
-								fireSendPduStatusEvent(EventsType.SEND_PDU_STATUS, task.getSmppServerTransaction(), task.getRequest(), task.getResponse(), null, true);
-							} 
-							catch (RecoverablePduException | UnrecoverablePduException | SmppChannelException | InterruptedException e) 
-							{
-								fireSendPduStatusEvent(EventsType.SEND_PDU_STATUS, task.getSmppServerTransaction(), task.getRequest(), task.getResponse(), e, false);
-							} 
-							finally 
-							{
-								SmppSessionCounters smppSessionCounters = task.getEsme().getSmppSession().getCounters();
-								SmppTransactionImpl smppTransactionImpl = (SmppTransactionImpl) task.getRequest().getReferenceObject();
-								long responseTime = System.currentTimeMillis() - smppTransactionImpl.getStartTime();
-								countSendResponsePdu(smppSessionCounters, task.getResponse(), responseTime, responseTime);
+        public void run() {
+            while (running) {
+                SmppSendingTask task = null;
+                try {
+                    task = queue.poll(timeout, TimeUnit.MILLISECONDS);
+                    if (task != null) {
+                        DefaultSmppSession defaultSmppSession = task.getEsme().getSmppSession();
+                        try {
+                            defaultSmppSession.sendRequestPdu(task.getRequest(), task.getTimeoutMillis(), false);
+                            fireSendPduStatusEvent(EventsType.SEND_PDU_STATUS, task.getSmppServerTransaction(),
+                                    task.getRequest(), task.getResponse(), null, true);
+                        } catch (RecoverablePduException e) {
+                            fireSendPduStatusEvent(EventsType.SEND_PDU_STATUS, task.getSmppServerTransaction(),
+                                    task.getRequest(), task.getResponse(), e, false);
+                        } catch (UnrecoverablePduException e) {
+                            fireSendPduStatusEvent(EventsType.SEND_PDU_STATUS, task.getSmppServerTransaction(),
+                                    task.getRequest(), task.getResponse(), e, false);
+                        } catch (SmppTimeoutException e) {
+                            fireSendPduStatusEvent(EventsType.SEND_PDU_STATUS, task.getSmppServerTransaction(),
+                                    task.getRequest(), task.getResponse(), e, false);
+                        } catch (SmppChannelException e) {
+                            fireSendPduStatusEvent(EventsType.SEND_PDU_STATUS, task.getSmppServerTransaction(),
+                                    task.getRequest(), task.getResponse(), e, false);
+                        } catch (InterruptedException e) {
+                            fireSendPduStatusEvent(EventsType.SEND_PDU_STATUS, task.getSmppServerTransaction(),
+                                    task.getRequest(), task.getResponse(), e, false);
+                        }
+                    }
+                } catch (Exception e) {
+                    if (task != null) {
+                        fireSendPduStatusEvent(EventsType.SEND_PDU_STATUS, task.getSmppServerTransaction(), task.getRequest(),
+                                task.getResponse(), e, false);
+                    }
+                }
+            }
+        }
 
-								if (task.getSmppServerTransaction() == null) {
-									tracer.severe(String
-											.format("SmppTransactionImpl Activity is null while trying to send PduResponse=%s",
-													task.getResponse()));
-								} else {
-									smppServerResourceAdaptor.endActivity(task
-											.getSmppServerTransaction());
-								}
-							}
-						}
-					}
-				}
-				catch (Exception e) 
-				{
-					if (task != null) {
-						fireSendPduStatusEvent(EventsType.SEND_PDU_STATUS, task.getSmppServerTransaction(), task.getRequest(), task.getResponse(), e, false);
-					}
-				}
-			}
-		}
+        public void offer(SmppSendingTask task) {
+            queue.offer(task);
+        }
+    }
 
-		public void offer(SmppSendingTask task) {
-			queue.offer(task);
-		}
-	}
+    public class ResponseSender extends Thread {
 
-	private void fireSendPduStatusEvent(String systemId,
-			SmppTransactionImpl smppServerTransaction, PduRequest request,
-			PduResponse response, Throwable exception, boolean status) {
+        private volatile Boolean running = true;
+        private LinkedBlockingQueue<SmppSendingTask> queue = new LinkedBlockingQueue<SmppSendingTask>();
+        private long timeout;
 
-		SendPduStatus event = new SendPduStatus(exception, request, response,
-				systemId, status);
+        public ResponseSender(String name, long timeout) {
+            super(name);
+            this.timeout = timeout;
+        }
 
-		try {
-			smppServerResourceAdaptor.fireEvent(systemId,
-					smppServerTransaction.getActivityHandle(), event);
-		} catch (Exception e) {
-			tracer.severe(
-					String.format(
-							"Received fireRecoverablePduException. Error while processing RecoverablePduException=%s",
-							event), e);
-		} finally {
-			if (smppServerTransaction != null) {
-				smppServerResourceAdaptor.endActivity(smppServerTransaction);
-			}
-		}
+        public void deactivate() {
+            running = false;
+            this.interrupt();
+            while (!queue.isEmpty()) {
+                SmppSendingTask task = queue.poll();
+                if (task != null) {
+                    Exception ex = new InterruptedException(getName() + " was stopped");
+                    fireSendPduStatusEvent(EventsType.SEND_PDU_STATUS, task.getSmppServerTransaction(), task.getRequest(),
+                            task.getResponse(), ex, false);
+                }
+            }
+        }
 
-	}
+        public void run() {
+            while (running) {
+                SmppSendingTask task = null;
+                try {
+                    task = queue.poll(timeout, TimeUnit.MILLISECONDS);
+                    if (task != null) {
+                        DefaultSmppSession defaultSmppSession = task.getEsme().getSmppSession();
+                        try {
+                            defaultSmppSession.sendResponsePdu(task.getResponse());
+                            fireSendPduStatusEvent(EventsType.SEND_PDU_STATUS, task.getSmppServerTransaction(),
+                                    task.getRequest(), task.getResponse(), null, true);
+                        } catch (RecoverablePduException e) {
+                            fireSendPduStatusEvent(EventsType.SEND_PDU_STATUS, task.getSmppServerTransaction(),
+                                    task.getRequest(), task.getResponse(), e, false);
+                        } catch (UnrecoverablePduException e) {
+                            fireSendPduStatusEvent(EventsType.SEND_PDU_STATUS, task.getSmppServerTransaction(),
+                                    task.getRequest(), task.getResponse(), e, false);
+                        } catch (SmppChannelException e) {
+                            fireSendPduStatusEvent(EventsType.SEND_PDU_STATUS, task.getSmppServerTransaction(),
+                                    task.getRequest(), task.getResponse(), e, false);
+                        } catch (InterruptedException e) {
+                            fireSendPduStatusEvent(EventsType.SEND_PDU_STATUS, task.getSmppServerTransaction(),
+                                    task.getRequest(), task.getResponse(), e, false);
+                        } finally {
+                            SmppSessionCounters smppSessionCounters = task.getEsme().getSmppSession().getCounters();
+                            SmppTransactionImpl smppTransactionImpl = (SmppTransactionImpl) task.getRequest()
+                                    .getReferenceObject();
+                            long responseTime = System.currentTimeMillis() - smppTransactionImpl.getStartTime();
+                            countSendResponsePdu(smppSessionCounters, task.getResponse(), responseTime, responseTime);
+                        }
+                    }
+                } catch (Exception e) {
+                    if (task != null) {
+                        fireSendPduStatusEvent(EventsType.SEND_PDU_STATUS, task.getSmppServerTransaction(), task.getRequest(),
+                                task.getResponse(), e, false);
+                    }
+                }
+            }
+        }
+
+        public void offer(SmppSendingTask task) {
+            queue.offer(task);
+        }
+    }
+
+    private void fireSendPduStatusEvent(String systemId, SmppTransactionImpl smppServerTransaction, PduRequest request,
+            PduResponse response, Throwable exception, boolean status) {
+
+        SendPduStatus event = new SendPduStatus(exception, request, response, systemId, status);
+
+        try {
+            smppServerResourceAdaptor.fireEvent(systemId, smppServerTransaction.getActivityHandle(), event);
+        } catch (Exception e) {
+            tracer.severe(String.format(
+                    "Received fireRecoverablePduException. Error while processing RecoverablePduException=%s", event), e);
+        } finally {
+            if (smppServerTransaction != null && (!status || response != null)) {
+                smppServerResourceAdaptor.endActivity(smppServerTransaction);
+            }
+        }
+    }
 }
