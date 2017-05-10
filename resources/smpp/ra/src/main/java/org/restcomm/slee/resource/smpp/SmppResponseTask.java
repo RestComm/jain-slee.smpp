@@ -5,19 +5,16 @@ import org.restcomm.smpp.Esme;
 import com.cloudhopper.smpp.pdu.PduRequest;
 import com.cloudhopper.smpp.pdu.PduResponse;
 
-public class SmppSendingTask {
+public class SmppResponseTask {
 
     private Esme esme;
     private PduRequest request;
-    long timeoutMillis;
     private PduResponse response;
     private SmppTransactionImpl smppServerTransaction;
 
-    public SmppSendingTask(Esme esme, PduRequest request, long timeoutMillis, PduResponse response,
-            SmppTransactionImpl smppServerTransaction) {
+    public SmppResponseTask(Esme esme, PduRequest request, PduResponse response, SmppTransactionImpl smppServerTransaction) {
         this.esme = esme;
         this.request = request;
-        this.timeoutMillis = timeoutMillis;
         this.response = response;
         this.smppServerTransaction = smppServerTransaction;
     }
@@ -28,10 +25,6 @@ public class SmppSendingTask {
 
     public PduRequest getRequest() {
         return request;
-    }
-
-    public long getTimeoutMillis() {
-        return timeoutMillis;
     }
 
     public PduResponse getResponse() {

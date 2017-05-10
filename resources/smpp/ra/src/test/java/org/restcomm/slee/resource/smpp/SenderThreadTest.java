@@ -1,24 +1,32 @@
 package org.restcomm.slee.resource.smpp;
 
+import EDU.oswego.cs.dl.util.concurrent.Semaphore;
+
 import com.cloudhopper.smpp.impl.DefaultSmppSession;
 import com.cloudhopper.smpp.impl.DefaultSmppSessionCounters;
 import com.cloudhopper.smpp.pdu.PduRequest;
 import com.cloudhopper.smpp.pdu.PduResponse;
 import com.cloudhopper.smpp.pdu.SubmitSm;
 import com.cloudhopper.smpp.pdu.SubmitSmResp;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 import javax.slee.facilities.Tracer;
+
 import junit.framework.Assert;
+
 import org.junit.After;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.restcomm.smpp.Esme;
+
 import static org.mockito.Mockito.*;
+
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
@@ -31,12 +39,12 @@ public class SenderThreadTest {
     public SenderThreadTest() {
     }
 
-    class SendingTask implements Runnable {
+    class RequestSendingTask implements Runnable {
 
-        SmppSendingTask task;
-        SenderThread sThread;
+        SmppRequestTask task;
+        RequestSender sThread;
 
-        public SendingTask(SmppSendingTask task, SenderThread sThread) {
+        public RequestSendingTask(SmppRequestTask task, RequestSender sThread) {
             this.task = task;
             this.sThread = sThread;
         }
@@ -45,12 +53,30 @@ public class SenderThreadTest {
             try {
                 sThread.offer(task);
             } catch (Exception e) {
-
             }
         }
 
     }
-    
+
+    class ResponseSendingTask implements Runnable {
+
+        SmppResponseTask task;
+        ResponseSender sThread;
+
+        public ResponseSendingTask(SmppResponseTask task, ResponseSender sThread) {
+            this.task = task;
+            this.sThread = sThread;
+        }
+
+        public void run() {
+            try {
+                sThread.offer(task);
+            } catch (Exception e) {
+            }
+        }
+
+    }
+
     @After
     public void cleanPool() {
         if (pool != null) {
@@ -64,7 +90,7 @@ public class SenderThreadTest {
 
         pool = Executors.newFixedThreadPool(NUM_THREADS);
 
-        //Mock preparation
+        // Mock preparation
         DefaultSmppSessionCounters counters = new DefaultSmppSessionCounters();
         SmppTransactionHandle handle = mock(SmppTransactionHandle.class);
         final SmppTransactionImpl transaction = mock(SmppTransactionImpl.class);
@@ -74,32 +100,32 @@ public class SenderThreadTest {
         DefaultSmppSession smppSession = mock(DefaultSmppSession.class);
         final Esme esme = mock(Esme.class);
         when(esme.getSmppSession()).thenReturn(smppSession);
-        //return null, the senderthread is not using the returned window anyway
+        // return null, the senderthread is not using the returned window anyway
         when(smppSession.sendRequestPdu(any(PduRequest.class), eq(reqTimeout), eq(false))).thenReturn(null);
         when(smppSession.getCounters()).thenReturn(counters);
         Tracer tracer = mock(Tracer.class);
         SmppServerResourceAdaptor adaptor = mock(SmppServerResourceAdaptor.class);
         Mockito.doNothing().when(adaptor).fireEvent(eq(EventsType.SEND_PDU_STATUS), eq(handle), anyObject());
 
-        //create tested object
-        SenderThread sThread = new SenderThread("testConcurrentReq", tracer, adaptor);
+        // create tested object
+        RequestSender sThread = new RequestSender(adaptor, tracer, "testConcurrentReq", reqTimeout);
         sThread.start();
 
-        //exercise concurrently
+        // exercise concurrently
         PduRequest req = null;
         for (int i = 0; i < NUM_THREADS; i++) {
-            SmppSendingTask task = null;
+            SmppRequestTask task = null;
             req = new SubmitSm();
             req.setReferenceObject(transaction);
-            task = new SmppSendingTask(esme, req, reqTimeout, null, transaction);
-            pool.submit(new SendingTask(task, sThread));
+            task = new SmppRequestTask(esme, req, reqTimeout, transaction);
+            pool.submit(new RequestSendingTask(task, sThread));
         }
 
-        //let things happen in the background
+        // let things happen in the background
         Thread.sleep(ASSSERTION_TIMEOUT);
 
-        //assert as much as possible, let mockito assert the expected behavior
-        verify(smppSession, times(NUM_THREADS)).sendRequestPdu(any(PduRequest.class), eq(reqTimeout), eq(false));        
+        // assert as much as possible, let mockito assert the expected behavior
+        verify(smppSession, times(NUM_THREADS)).sendRequestPdu(any(PduRequest.class), eq(reqTimeout), eq(false));
     }
 
     @Test
@@ -108,7 +134,7 @@ public class SenderThreadTest {
 
         pool = Executors.newFixedThreadPool(NUM_THREADS);
 
-        //Mock preparation
+        // Mock preparation
         DefaultSmppSessionCounters counters = new DefaultSmppSessionCounters();
         SmppTransactionHandle handle = mock(SmppTransactionHandle.class);
         final SmppTransactionImpl transaction = mock(SmppTransactionImpl.class);
@@ -124,25 +150,25 @@ public class SenderThreadTest {
         SmppServerResourceAdaptor adaptor = mock(SmppServerResourceAdaptor.class);
         Mockito.doNothing().when(adaptor).fireEvent(eq(EventsType.SEND_PDU_STATUS), eq(handle), anyObject());
 
-        //create tested object
-        final SenderThread sThread = new SenderThread("testConcurrentRes", tracer, adaptor);
+        // create tested object
+        final ResponseSender sThread = new ResponseSender(adaptor, tracer, "testConcurrentRes", reqTimeout);
         sThread.start();
 
-        //exercise concurrently
+        // exercise concurrently
         PduRequest req = null;
         for (int i = 0; i < NUM_THREADS; i++) {
-            SmppSendingTask task = null;
+            SmppResponseTask task = null;
             req = new SubmitSm();
             req.setReferenceObject(transaction);
-            task = new SmppSendingTask(esme, req, reqTimeout, new SubmitSmResp(), transaction);
-            pool.submit(new SendingTask(task, sThread));
+            task = new SmppResponseTask(esme, req, new SubmitSmResp(), transaction);
+            pool.submit(new ResponseSendingTask(task, sThread));
         }
 
-        //let things happen in the background
+        // let things happen in the background
         Thread.sleep(ASSSERTION_TIMEOUT);
 
-        //assert as much as possible, let mockito assert the expected behavior
-        //TODO
+        // assert as much as possible, let mockito assert the expected behavior
+        // TODO
         Assert.assertEquals(NUM_THREADS, counters.getRxSubmitSM().getResponse());
         verify(smppSession, times(NUM_THREADS)).sendResponsePdu(any(PduResponse.class));
     }
@@ -153,7 +179,7 @@ public class SenderThreadTest {
 
         pool = Executors.newFixedThreadPool(NUM_THREADS);
 
-        //Mock preparation
+        // Mock preparation
         DefaultSmppSessionCounters counters = new DefaultSmppSessionCounters();
         SmppTransactionHandle handle = mock(SmppTransactionHandle.class);
         final SmppTransactionImpl transaction = mock(SmppTransactionImpl.class);
@@ -163,15 +189,11 @@ public class SenderThreadTest {
         DefaultSmppSession smppSession = mock(DefaultSmppSession.class);
         final Esme esme = mock(Esme.class);
         when(esme.getSmppSession()).thenReturn(smppSession);
-        //return null, the senderthread is not using the returned window anyway
+        // return null, the senderthread is not using the returned window anyway
         when(smppSession.sendRequestPdu(any(PduRequest.class), eq(reqTimeout), eq(false))).thenAnswer(new Answer() {
-            public Object answer(InvocationOnMock invocation) {
-                try {
-                    //simulate blocking network activity                    
-                    new ServerSocket(0).accept();
-                } catch (IOException ex) {
-                    Logger.getLogger(SenderThreadTest.class.getName()).log(Level.SEVERE, null, ex);
-                }
+            public Object answer(InvocationOnMock invocation) throws InterruptedException {
+                Semaphore semaphore=new Semaphore(0);
+                semaphore.acquire();
                 return null;
             }
         });
@@ -180,24 +202,24 @@ public class SenderThreadTest {
         SmppServerResourceAdaptor adaptor = mock(SmppServerResourceAdaptor.class);
         Mockito.doNothing().when(adaptor).fireEvent(eq(EventsType.SEND_PDU_STATUS), eq(handle), anyObject());
 
-        //create tested object
-        final SenderThread sThread = new SenderThread("deactivateWhileSendingReq", tracer, adaptor);
+        // create tested object
+        final RequestSender sThread = new RequestSender(adaptor, tracer, "deactivateWhileSendingReq", reqTimeout);
         sThread.start();
 
-        //exercise concurrently
+        // exercise concurrently
         PduRequest req = null;
         for (int i = 0; i < NUM_THREADS; i++) {
-            SmppSendingTask task = null;
+            SmppRequestTask task = null;
             req = new SubmitSm();
             req.setReferenceObject(transaction);
-            task = new SmppSendingTask(esme, req, reqTimeout, null, transaction);
-            pool.submit(new SendingTask(task, sThread));
+            task = new SmppRequestTask(esme, req, reqTimeout, transaction);
+            pool.submit(new RequestSendingTask(task, sThread));
         }
 
         sThread.deactivate();
-        //let things happen in the background
-        Thread.sleep(ASSSERTION_TIMEOUT);        
-        Assert.assertFalse(sThread.isAlive());        
+        // let things happen in the background
+        Thread.sleep(ASSSERTION_TIMEOUT);
+        Assert.assertFalse(sThread.isAlive());
     }
 
     @Test
@@ -206,7 +228,7 @@ public class SenderThreadTest {
 
         pool = Executors.newFixedThreadPool(NUM_THREADS);
 
-        //Mock preparation
+        // Mock preparation
         DefaultSmppSessionCounters counters = new DefaultSmppSessionCounters();
         SmppTransactionHandle handle = mock(SmppTransactionHandle.class);
         final SmppTransactionImpl transaction = mock(SmppTransactionImpl.class);
@@ -216,15 +238,11 @@ public class SenderThreadTest {
         DefaultSmppSession smppSession = mock(DefaultSmppSession.class);
         final Esme esme = mock(Esme.class);
         when(esme.getSmppSession()).thenReturn(smppSession);
-        //return null, the senderthread is not using the returned window anyway
+        // return null, the senderthread is not using the returned window anyway
         Mockito.doAnswer(new Answer() {
-            public Object answer(InvocationOnMock invocation) {
-                try {
-                    //simulate blocking network activity
-                    new ServerSocket(0).accept();
-                } catch (IOException ex) {
-                    Logger.getLogger(SenderThreadTest.class.getName()).log(Level.SEVERE, null, ex);
-                }
+            public Object answer(InvocationOnMock invocation) throws InterruptedException {
+                Semaphore semaphore=new Semaphore(0);
+                semaphore.acquire();
                 return null;
             }
         }).when(smppSession).sendResponsePdu(any(PduResponse.class));
@@ -233,32 +251,33 @@ public class SenderThreadTest {
         SmppServerResourceAdaptor adaptor = mock(SmppServerResourceAdaptor.class);
         Mockito.doNothing().when(adaptor).fireEvent(eq(EventsType.SEND_PDU_STATUS), eq(handle), anyObject());
 
-        //create tested object
-        final SenderThread sThread = new SenderThread("deactivateWhileSendingRes", tracer, adaptor);
+        // create tested object
+        final ResponseSender sThread = new ResponseSender(adaptor, tracer, "deactivateWhileSendingRes", reqTimeout);
         sThread.start();
 
-        //exercise concurrently
+        // exercise concurrently
         PduRequest req = null;
         for (int i = 0; i < NUM_THREADS; i++) {
-            SmppSendingTask task = null;
+            SmppResponseTask task = null;
             req = new SubmitSm();
             req.setReferenceObject(transaction);
-            task = new SmppSendingTask(esme, req, reqTimeout, new SubmitSmResp(), transaction);
-            pool.submit(new SendingTask(task, sThread));
+            task = new SmppResponseTask(esme, req, new SubmitSmResp(), transaction);
+            pool.submit(new ResponseSendingTask(task, sThread));
         }
 
         sThread.deactivate();
-        //let things happen in the background
-        Thread.sleep(ASSSERTION_TIMEOUT);        
-        Assert.assertFalse(sThread.isAlive());        
+        // let things happen in the background
+        Thread.sleep(ASSSERTION_TIMEOUT);
+        Assert.assertFalse(sThread.isAlive());
     }
-    
+
     @Test
-    public void deactivateWhileInactivity() throws Exception {
+    public void deactivateWhileInactivityReq() throws Exception {
+        final long reqTimeout = 500;
 
         pool = Executors.newFixedThreadPool(NUM_THREADS);
 
-        //Mock preparation
+        // Mock preparation
         DefaultSmppSessionCounters counters = new DefaultSmppSessionCounters();
         SmppTransactionHandle handle = mock(SmppTransactionHandle.class);
         final SmppTransactionImpl transaction = mock(SmppTransactionImpl.class);
@@ -272,15 +291,46 @@ public class SenderThreadTest {
         Tracer tracer = mock(Tracer.class);
         SmppServerResourceAdaptor adaptor = mock(SmppServerResourceAdaptor.class);
 
-        //create tested object
-        final SenderThread sThread = new SenderThread("deactivateWhileInactivity", tracer, adaptor);
+        // create tested object
+        final RequestSender sThread = new RequestSender(adaptor, tracer, "deactivateWhileInactivity", reqTimeout);
         sThread.start();
 
         sThread.deactivate();
-        
-        //let things happen in the background
-        Thread.sleep(ASSSERTION_TIMEOUT);        
+
+        // let things happen in the background
+        Thread.sleep(ASSSERTION_TIMEOUT);
         Assert.assertFalse(sThread.isAlive());
-    }    
+    }
+
+    @Test
+    public void deactivateWhileInactivityRes() throws Exception {
+        final long reqTimeout = 500;
+
+        pool = Executors.newFixedThreadPool(NUM_THREADS);
+
+        // Mock preparation
+        DefaultSmppSessionCounters counters = new DefaultSmppSessionCounters();
+        SmppTransactionHandle handle = mock(SmppTransactionHandle.class);
+        final SmppTransactionImpl transaction = mock(SmppTransactionImpl.class);
+        when(transaction.getActivityHandle()).thenReturn(handle);
+        when(transaction.getStartTime()).thenReturn(System.currentTimeMillis());
+
+        DefaultSmppSession smppSession = mock(DefaultSmppSession.class);
+        final Esme esme = mock(Esme.class);
+        when(esme.getSmppSession()).thenReturn(smppSession);
+        when(smppSession.getCounters()).thenReturn(counters);
+        Tracer tracer = mock(Tracer.class);
+        SmppServerResourceAdaptor adaptor = mock(SmppServerResourceAdaptor.class);
+
+        // create tested object
+        final ResponseSender sThread = new ResponseSender(adaptor, tracer, "deactivateWhileInactivity", reqTimeout);
+        sThread.start();
+
+        sThread.deactivate();
+
+        // let things happen in the background
+        Thread.sleep(ASSSERTION_TIMEOUT);
+        Assert.assertFalse(sThread.isAlive());
+    }
 
 }

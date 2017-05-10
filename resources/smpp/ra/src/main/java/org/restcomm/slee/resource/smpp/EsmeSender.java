@@ -1,8 +1,5 @@
 package org.restcomm.slee.resource.smpp;
 
-import org.restcomm.slee.resource.smpp.SmppSessionsImpl.RequestSender;
-import org.restcomm.slee.resource.smpp.SmppSessionsImpl.ResponseSender;
-
 public class EsmeSender {
 
     private RequestSender requestThread;
@@ -23,11 +20,11 @@ public class EsmeSender {
         responseThread.deactivate();
     }
 
-    public void offerRequest(SmppSendingTask task) {
+    public void offerRequest(SmppRequestTask task) {
         requestThread.offer(task);
     }
 
-    public void offerResponse(SmppSendingTask task) {
+    public void offerResponse(SmppResponseTask task) {
         responseThread.offer(task);
     }
 }
