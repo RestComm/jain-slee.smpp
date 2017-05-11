@@ -3,6 +3,7 @@ package org.restcomm.slee.resource.smpp;
 public interface EventsType {
 	
 	public static final String REQUEST_TIMEOUT = "org.restcomm.slee.resource.smpp.REQUEST_TIMEOUT";
+	public static final String SEND_PDU_STATUS = "org.restcomm.slee.resource.smpp.SEND_PDU_STATUS";
 
 	public static final String SUBMIT_SM = "org.restcomm.slee.resource.smpp.SUBMIT_SM";
 	public static final String DATA_SM = "org.restcomm.slee.resource.smpp.DATA_SM";
