@@ -15,11 +15,32 @@
 			<groupId>javax.slee</groupId>
 			<artifactId>jain-slee</artifactId>
 		</dependency>
+		<!--
 		<dependency>
 			<groupId>${project.groupId}</groupId>
 			<artifactId>smpp-server-ra-library</artifactId>
 			<version>${project.version}</version>
-		</dependency>		
+		</dependency>
+		-->
+		<dependency>
+			<groupId>org.restcomm.smpp</groupId>
+			<artifactId>ch-smpp</artifactId>
+			<version>${ch.smpp.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.restcomm.smpp</groupId>
+			<artifactId>smpp-extensions</artifactId>
+			<version>${smpp-extensions.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>javolution</groupId>
+			<artifactId>javolution</artifactId>
+			<version>${javolution.version}</version>
+			<scope>provided</scope>
+		</dependency>
+
 		<dependency>
 			<groupId>${project.groupId}</groupId>
 			<artifactId>smpp-server-ra-events</artifactId>
