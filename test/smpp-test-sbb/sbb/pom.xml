@@ -24,6 +24,12 @@
 			<groupId>org.restcomm.slee.resource.smpp</groupId>
 			<version>${project.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>org.restcomm.smpp</groupId>
+			<artifactId>smpp-extensions</artifactId>
+			<version>${smpp-extensions.version}</version>
+			<scope>provided</scope>
+		</dependency>
     </dependencies>
 
 	<profiles>
