@@ -3,9 +3,9 @@
     <modelVersion>4.0.0</modelVersion>
 
 	<parent>
-		<groupId>org.mobicents</groupId>
+		<groupId>org.restcomm</groupId>
 		<artifactId>restcomm-parent</artifactId>
-		<version>2.27.47</version> <!-- parent pom version -->
+		<version>3.0.7</version> <!-- parent pom version -->
 	</parent>
 
 	<groupId>org.restcomm.slee.resource.smpp</groupId>
@@ -21,7 +21,7 @@
 
     <properties>
         <ch.smpp.version>5.0.5</ch.smpp.version>
-		<smpp-extensions.version>7.0.24</smpp-extensions.version>
+		<smpp-extensions.version>7.0.28</smpp-extensions.version>
 		<restcomm.slee.ext.version>7.0.63</restcomm.slee.ext.version>
         <maven.du.plugin.jboss5.version>3.0.14</maven.du.plugin.jboss5.version>
         <maven.du.plugin.wildfly.version>4.0.2</maven.du.plugin.wildfly.version>
