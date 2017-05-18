@@ -24,7 +24,7 @@ public class SendPduStatus {
 	@Override
 	public String toString() {
 		return "SendPduStatus [exception=" + exception + ", request=" + request
-				+ ", response=" + response + ", systemId=" + systemId + ", isSuccess" + isSuccess + "]";
+				+ ", response=" + response + ", systemId=" + systemId + ", isSuccess=" + isSuccess + "]";
 	}
 
 	public Throwable getException() {
