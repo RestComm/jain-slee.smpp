@@ -14,7 +14,7 @@
 	<name>Core : SLEE : SMPP Server RA Parent</name>
 
 	<modules>
-		<!--<module>library</module>-->
+		<module>library</module>
 		<module>events</module>
 		<module>ratype</module>
 		<module>ra</module>
