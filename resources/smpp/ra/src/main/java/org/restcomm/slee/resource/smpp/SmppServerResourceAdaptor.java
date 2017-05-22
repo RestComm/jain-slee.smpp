@@ -1,5 +1,6 @@
 package org.restcomm.slee.resource.smpp;
 
+import javax.management.ObjectName;
 import javax.slee.Address;
 import javax.slee.AddressPlan;
 import javax.slee.SLEEException;
@@ -24,6 +25,8 @@ import javax.slee.resource.StartActivityException;
 import javax.slee.resource.UnrecognizedActivityHandleException;
 
 import org.restcomm.smpp.SmppManagement;
+
+import java.lang.management.ManagementFactory;
 
 public class SmppServerResourceAdaptor implements ResourceAdaptor {
 
@@ -130,15 +133,28 @@ public class SmppServerResourceAdaptor implements ResourceAdaptor {
 	@Override
 	public void raActive() {
 		try {
-			SmppManagement smscManagemet = SmppManagement.getInstance();
-
-			smscManagemet.setSmppSessionHandlerInterface(this.smppServerSession.getSmppSessionHandlerInterface());
-
-			smscManagemet.startSmppManagement();
-
-			if (tracer.isInfoEnabled()) {
-				tracer.info("Activated RA Entity " + this.raContext.getEntityName());
+			ObjectName objectName = new ObjectName("org.restcomm.smpp:name=SmppManagement");
+			Object object = null;
+			if (ManagementFactory.getPlatformMBeanServer().isRegistered(objectName)) {
+				// trying to get via MBeanServer
+				object = ManagementFactory.getPlatformMBeanServer().getAttribute(objectName, "SmppManagementInstance");
+				if (tracer.isInfoEnabled()) {
+					tracer.info("Trying to get via MBeanServer: " + objectName + ", object: " + object);
+				}
 			}
+
+			if (object != null && object instanceof SmppManagement) {
+				SmppManagement smscManagement = (SmppManagement) object;
+
+				smscManagement.setSmppSessionHandlerInterface(this.smppServerSession.getSmppSessionHandlerInterface());
+				
+				smscManagement.startSmppManagement();
+
+				if (tracer.isInfoEnabled()) {
+					tracer.info("Activated RA Entity " + this.raContext.getEntityName());
+				}
+			}
+
 		} catch (Exception e) {
 			this.tracer.severe("Failed to activate SMPP Server RA ", e);
 		}
