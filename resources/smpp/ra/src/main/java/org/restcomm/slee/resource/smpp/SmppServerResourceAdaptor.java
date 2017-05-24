@@ -163,13 +163,13 @@ public class SmppServerResourceAdaptor implements ResourceAdaptor {
 			} else {
 				if (object != null) {
 					if (tracer.isWarningEnabled()) {
-						tracer.warning("RA Entity " + this.raContext.getEntityName()
+						tracer.warning("RA Entity " + this.raContext.getEntityName() +
 								" can't be activated: SmppManagementInstance() returns object" +
 								" that isn't SmppManagement instance! Object is " + object);
 					}
 				} else {
 					if (tracer.isWarningEnabled()) {
-						tracer.warning("RA Entity " + this.raContext.getEntityName()
+						tracer.warning("RA Entity " + this.raContext.getEntityName() +
 								" can't be activated: SmppManagementInstance() returns null");
 					}
 				}
