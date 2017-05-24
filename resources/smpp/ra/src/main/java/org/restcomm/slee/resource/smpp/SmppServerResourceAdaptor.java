@@ -24,6 +24,7 @@ import javax.slee.resource.SleeEndpoint;
 import javax.slee.resource.StartActivityException;
 import javax.slee.resource.UnrecognizedActivityHandleException;
 
+import org.jboss.mx.util.MBeanServerLocator;
 import org.restcomm.smpp.SmppManagement;
 
 import java.lang.management.ManagementFactory;
@@ -139,7 +140,13 @@ public class SmppServerResourceAdaptor implements ResourceAdaptor {
 				// trying to get via MBeanServer
 				object = ManagementFactory.getPlatformMBeanServer().getAttribute(objectName, "SmppManagementInstance");
 				if (tracer.isInfoEnabled()) {
-					tracer.info("Trying to get via MBeanServer: " + objectName + ", object: " + object);
+					tracer.info("Trying to get via Platform MBeanServer: " + objectName + ", object: " + object);
+				}
+			} else {
+				// trying to get via locateJBoss
+				object = MBeanServerLocator.locateJBoss().getAttribute(objectName, "SmppManagementInstance");
+				if (tracer.isInfoEnabled()) {
+					tracer.info("Trying to get via JBoss MBeanServer: " + objectName + ", object: " + object);
 				}
 			}
 
@@ -152,6 +159,19 @@ public class SmppServerResourceAdaptor implements ResourceAdaptor {
 
 				if (tracer.isInfoEnabled()) {
 					tracer.info("Activated RA Entity " + this.raContext.getEntityName());
+				}
+			} else {
+				if (object != null) {
+					if (tracer.isWarningEnabled()) {
+						tracer.warning("RA Entity " + this.raContext.getEntityName()
+								" can't be activated: SmppManagementInstance() returns object" +
+								" that isn't SmppManagement instance! Object is " + object);
+					}
+				} else {
+					if (tracer.isWarningEnabled()) {
+						tracer.warning("RA Entity " + this.raContext.getEntityName()
+								" can't be activated: SmppManagementInstance() returns null");
+					}
 				}
 			}
 
