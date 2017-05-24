@@ -19,7 +19,7 @@
 		<module>test/smpp-test-sbb</module>
 	</modules>
 
-    <properties>
+	<properties>
         <ch.smpp.version>5.0.5</ch.smpp.version>
 		<smpp-extensions.version>7.0.31</smpp-extensions.version>
 		<restcomm.slee.ext.version>7.0.63</restcomm.slee.ext.version>
