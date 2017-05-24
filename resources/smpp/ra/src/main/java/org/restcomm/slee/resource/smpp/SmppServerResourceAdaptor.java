@@ -1,5 +1,8 @@
 package org.restcomm.slee.resource.smpp;
 
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+
 import javax.slee.Address;
 import javax.slee.AddressPlan;
 import javax.slee.SLEEException;
@@ -36,6 +39,8 @@ public class SmppServerResourceAdaptor implements ResourceAdaptor {
 
 	private transient static final Address address = new Address(AddressPlan.IP, "localhost");
 
+	private ConcurrentHashMap<SmppTransactionImpl,DelayedActivityEndTask> activityEndTasks = new ConcurrentHashMap<SmppTransactionImpl,DelayedActivityEndTask>();
+	
 	public SmppServerResourceAdaptor() {
 		// TODO Auto-generated constructor stub
 	}
@@ -51,6 +56,9 @@ public class SmppServerResourceAdaptor implements ResourceAdaptor {
 
 		if (serverTx != null) {
 			serverTx.clear();
+			DelayedActivityEndTask activityEndTask = activityEndTasks.remove(serverTx);
+			if(activityEndTask!=null)
+			    activityEndTask.unschedule();
 		}
 	}
 
@@ -228,12 +236,24 @@ public class SmppServerResourceAdaptor implements ResourceAdaptor {
 			throws ActivityAlreadyExistsException, NullPointerException, IllegalStateException, SLEEException,
 			StartActivityException {
 		sleeEndpoint.startActivity(txImpl.getActivityHandle(), txImpl, ActivityFlags.REQUEST_ENDED_CALLBACK);
+	    
+		DelayedActivityEndTask activityEndTask = new DelayedActivityEndTask(tracer, this, txImpl, raContext.getTimer());
+        activityEndTasks.put(txImpl, activityEndTask);
+        SmppManagement smppManagemet = SmppManagement.getInstance();
+        int delay = smppManagemet.getSmppServerManagement().getSmppActivityTimeout();
+	    activityEndTask.schedule(delay, TimeUnit.SECONDS);
 	}
 
 	protected void startNewSmppTransactionSuspendedActivity(SmppTransactionImpl txImpl)
 			throws ActivityAlreadyExistsException, NullPointerException, IllegalStateException, SLEEException,
 			StartActivityException {
 		sleeEndpoint.startActivitySuspended(txImpl.getActivityHandle(), txImpl, ActivityFlags.REQUEST_ENDED_CALLBACK);
+		
+		DelayedActivityEndTask activityEndTask = new DelayedActivityEndTask(tracer, this, txImpl, raContext.getTimer());
+        activityEndTasks.put(txImpl, activityEndTask);
+        SmppManagement smppManagemet = SmppManagement.getInstance();
+        int delay = smppManagemet.getSmppServerManagement().getSmppActivityTimeout();
+		activityEndTask.schedule(delay, TimeUnit.SECONDS);
 	}
 
 	protected void endActivity(SmppTransactionImpl txImpl) {
