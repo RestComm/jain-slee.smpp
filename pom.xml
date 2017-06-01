@@ -20,7 +20,7 @@
 
 	<properties>
 		<ch.smpp.version>5.0.9</ch.smpp.version>
-		<smpp-extensions.version>7.0.33</smpp-extensions.version> <!-- 1.0.0-SNAPSHOT -->
+		<smpp-extensions.version>7.0.34</smpp-extensions.version> <!-- 1.0.0-SNAPSHOT -->
 		<restcomm.slee.ext.version>7.0.63</restcomm.slee.ext.version>
 		<testng.version>6.8</testng.version>
 		<slf4j.version>1.5.6</slf4j.version>
