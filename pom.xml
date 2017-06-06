@@ -19,13 +19,15 @@
 		<module>test/smpp-test-sbb</module>
 	</modules>
 
-    <properties>
-        <ch.smpp.version>5.0.5</ch.smpp.version>
-		<smpp-extensions.version>7.0.31</smpp-extensions.version>
+	<properties>
+		<ch.smpp.version>5.0.9</ch.smpp.version>
+		<smpp-extensions.version>7.0.35</smpp-extensions.version>
 		<restcomm.slee.ext.version>7.0.63</restcomm.slee.ext.version>
-        <maven.du.plugin.jboss5.version>3.0.14</maven.du.plugin.jboss5.version>
-        <maven.du.plugin.wildfly.version>4.0.2</maven.du.plugin.wildfly.version>
-    </properties>
+		<maven.du.plugin.jboss5.version>3.0.14</maven.du.plugin.jboss5.version>
+		<maven.du.plugin.wildfly.version>4.0.2</maven.du.plugin.wildfly.version>
+		<testng.version>6.8</testng.version>
+		<slf4j.version>1.5.6</slf4j.version>
+	</properties>
 
     <scm>
         <connection>scm:git:https://github.com/RestComm/jain-slee.smpp.git</connection>
