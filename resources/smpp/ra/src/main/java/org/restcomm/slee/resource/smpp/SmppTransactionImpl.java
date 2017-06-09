@@ -1,5 +1,7 @@
 package org.restcomm.slee.resource.smpp;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.restcomm.slee.resource.smpp.SmppTransaction;
 import org.restcomm.smpp.Esme;
 
@@ -14,6 +16,8 @@ public class SmppTransactionImpl implements SmppTransaction {
 	private PduRequest wrappedPduRequest;
 	private final long startTime;
 
+	private AtomicBoolean expectedPduResponseReceived = new AtomicBoolean(false);
+	
 	protected SmppTransactionImpl(PduRequest wrappedPduRequest, Esme esme,
 			SmppTransactionHandle smppServerTransactionHandle, SmppServerResourceAdaptor ra) {
 		this.wrappedPduRequest = wrappedPduRequest;
@@ -58,4 +62,11 @@ public class SmppTransactionImpl implements SmppTransaction {
 		}
 	}
 
+	public void markExpectedPduResponseReceived() {
+		this.expectedPduResponseReceived.set(true);
+	}
+	
+	public boolean wasExpectedPduResponseReceived() {
+		return this.expectedPduResponseReceived.get();
+	}
 }

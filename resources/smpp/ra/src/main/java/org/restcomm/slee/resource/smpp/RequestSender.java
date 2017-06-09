@@ -93,6 +93,8 @@ public class RequestSender extends Thread {
         SendPduStatus event = new SendPduStatus(exception, request, response, systemId, status);
 
         try {
+        	if(smppServerTransaction.wasExpectedPduResponseReceived())
+        		tracer.info("invoking fireSendPduStatusEvent after expectedPduResponseReceived for esme" + smppServerTransaction.getEsme().getName() + ", sequenceNumber " + request.getSequenceNumber());
             smppServerResourceAdaptor.fireEvent(systemId, smppServerTransaction.getActivityHandle(), event);
         } catch (Exception e) {
             tracer.severe(String.format(

@@ -2,6 +2,7 @@ package org.restcomm.slee.resource.smpp;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.slee.SLEEException;
 import javax.slee.facilities.Tracer;
@@ -372,6 +373,7 @@ public class SmppSessionsImpl implements SmppSessions {
                 tracer.severe(String.format("Error while processing PduAsyncResponse=%s", pduAsyncResponse), e);
             } finally {
                 if (smppServerTransaction != null) {
+                	smppServerTransaction.markExpectedPduResponseReceived();
                     smppServerResourceAdaptor.endActivity(smppServerTransaction);
                 }
             }
