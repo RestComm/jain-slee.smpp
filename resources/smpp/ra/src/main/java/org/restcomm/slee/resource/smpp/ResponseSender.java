@@ -49,6 +49,8 @@ public class ResponseSender extends Thread {
                 task = queue.poll(timeout, TimeUnit.MILLISECONDS);
                 if (task != null) {
                     DefaultSmppSession defaultSmppSession = task.getEsme().getSmppSession();
+                    task.getSmppServerTransaction().acquireSemaphore();
+                    
                     try {
                         defaultSmppSession.sendResponsePdu(task.getResponse());
                         fireSendPduStatusEvent(EventsType.SEND_PDU_STATUS, task.getSmppServerTransaction(), task.getRequest(),
@@ -78,6 +80,11 @@ public class ResponseSender extends Thread {
                     fireSendPduStatusEvent(EventsType.SEND_PDU_STATUS, task.getSmppServerTransaction(), task.getRequest(),
                             task.getResponse(), e, false);
                 }
+            }
+            finally
+            {
+            	if(task!=null)
+            		task.getSmppServerTransaction().releaseSemaphore();
             }
         }
     }

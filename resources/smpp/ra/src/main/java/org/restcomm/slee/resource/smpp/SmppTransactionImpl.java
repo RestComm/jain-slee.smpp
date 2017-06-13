@@ -1,5 +1,6 @@
 package org.restcomm.slee.resource.smpp;
 
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.restcomm.slee.resource.smpp.SmppTransaction;
@@ -21,6 +22,7 @@ public class SmppTransactionImpl implements SmppTransaction {
 	private AtomicBoolean recoverablePduException = new AtomicBoolean(false);
 	private AtomicBoolean activityEndedByResponseSender = new AtomicBoolean(false);
 	private AtomicBoolean activityEndedByRequestSender = new AtomicBoolean(false);
+	private Semaphore eventSemaphore=new Semaphore(1);
 	
 	protected SmppTransactionImpl(PduRequest wrappedPduRequest, Esme esme,
 			SmppTransactionHandle smppServerTransactionHandle, SmppServerResourceAdaptor ra) {
@@ -104,5 +106,20 @@ public class SmppTransactionImpl implements SmppTransaction {
 	
 	public boolean wasActivityEndedByRequestSender() {
 		return this.activityEndedByRequestSender.get();
+	}
+	
+	protected void acquireSemaphore() {
+		try
+        {
+        	eventSemaphore.acquire();
+        }
+        catch(InterruptedException ex)
+        {
+        	
+        }
+	}
+	
+	protected void releaseSemaphore() {
+		eventSemaphore.release();
 	}
 }

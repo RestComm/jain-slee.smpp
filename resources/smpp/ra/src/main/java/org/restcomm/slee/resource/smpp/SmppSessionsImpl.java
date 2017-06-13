@@ -344,6 +344,8 @@ public class SmppSessionsImpl implements SmppSessions {
                 return;
             }
 
+            smppServerTransaction.acquireSemaphore();
+            
             try {
                 switch (pduResponse.getCommandId()) {
                 case SmppConstants.CMD_ID_DELIVER_SM_RESP:
@@ -372,10 +374,9 @@ public class SmppSessionsImpl implements SmppSessions {
             } catch (Exception e) {
                 tracer.severe(String.format("Error while processing PduAsyncResponse=%s", pduAsyncResponse), e);
             } finally {
-                if (smppServerTransaction != null) {
-                	smppServerTransaction.markExpectedPduResponseReceived();
-                    smppServerResourceAdaptor.endActivity(smppServerTransaction);
-                }
+                smppServerTransaction.markExpectedPduResponseReceived();
+                smppServerResourceAdaptor.endActivity(smppServerTransaction);  
+                smppServerTransaction.releaseSemaphore();                
             }
         }
 
@@ -393,7 +394,8 @@ public class SmppSessionsImpl implements SmppSessions {
             }
 
             PduRequestTimeout event = new PduRequestTimeout(pduRequest, this.esme.getName());
-
+            smppServerTransaction.acquireSemaphore();
+            
             try {
                 smppServerResourceAdaptor.fireEvent(EventsType.REQUEST_TIMEOUT,
                         smppServerTransaction.getActivityHandle(), event);
@@ -401,11 +403,10 @@ public class SmppSessionsImpl implements SmppSessions {
                 tracer.severe(String.format("Received firePduRequestExpired. Error while processing PduRequest=%s",
                         pduRequest), e);
             } finally {
-                if (smppServerTransaction != null) {
-                	smppServerTransaction.markPduRequestExpired();
-                    smppServerResourceAdaptor.endActivity(smppServerTransaction);
-                    pduRequest.setReferenceObject(null);
-                }
+            	smppServerTransaction.markPduRequestExpired();
+                smppServerResourceAdaptor.endActivity(smppServerTransaction);
+                smppServerTransaction.releaseSemaphore();
+                pduRequest.setReferenceObject(null);                
             }
         }
 
@@ -416,7 +417,6 @@ public class SmppSessionsImpl implements SmppSessions {
             Pdu partialPdu = recoverablePduException.getPartialPdu();
 
             SmppTransactionImpl smppServerTransaction = (SmppTransactionImpl) partialPdu.getReferenceObject();
-
             if (smppServerTransaction == null) {
                 tracer.severe(String.format(
                         "Rx : fireRecoverablePduException for SmppSessionImpl=%s but SmppTransactionImpl is null",
@@ -424,6 +424,8 @@ public class SmppSessionsImpl implements SmppSessions {
                 return;
             }
 
+            smppServerTransaction.acquireSemaphore();
+            
             try {
                 smppServerResourceAdaptor.fireEvent(EventsType.RECOVERABLE_PDU_EXCEPTION,
                         smppServerTransaction.getActivityHandle(), recoverablePduException);
@@ -432,10 +434,9 @@ public class SmppSessionsImpl implements SmppSessions {
                         "Received fireRecoverablePduException. Error while processing RecoverablePduException=%s",
                         recoverablePduException), e);
             } finally {
-                if (smppServerTransaction != null) {
-                	smppServerTransaction.markRecoverablePduException();
-                    smppServerResourceAdaptor.endActivity(smppServerTransaction);
-                }
+               smppServerTransaction.markRecoverablePduException();
+               smppServerResourceAdaptor.endActivity(smppServerTransaction);
+               smppServerTransaction.releaseSemaphore();               
             }
 
         }
