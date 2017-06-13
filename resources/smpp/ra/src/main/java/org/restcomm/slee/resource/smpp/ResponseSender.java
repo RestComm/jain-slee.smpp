@@ -101,6 +101,8 @@ public class ResponseSender extends Thread {
                 tracer.severe(String.format("SmppTransactionImpl Activity is null while trying to send PduResponse=%s",
                         response));
             } else {
+            	if(smppServerTransaction !=null)
+            		smppServerTransaction.markActivityEndedByResponseSender();
                 this.smppServerResourceAdaptor.endActivity(smppServerTransaction);
             }
         }

@@ -17,6 +17,10 @@ public class SmppTransactionImpl implements SmppTransaction {
 	private final long startTime;
 
 	private AtomicBoolean expectedPduResponseReceived = new AtomicBoolean(false);
+	private AtomicBoolean pduRequestExpired = new AtomicBoolean(false);
+	private AtomicBoolean recoverablePduException = new AtomicBoolean(false);
+	private AtomicBoolean activityEndedByResponseSender = new AtomicBoolean(false);
+	private AtomicBoolean activityEndedByRequestSender = new AtomicBoolean(false);
 	
 	protected SmppTransactionImpl(PduRequest wrappedPduRequest, Esme esme,
 			SmppTransactionHandle smppServerTransactionHandle, SmppServerResourceAdaptor ra) {
@@ -68,5 +72,37 @@ public class SmppTransactionImpl implements SmppTransaction {
 	
 	public boolean wasExpectedPduResponseReceived() {
 		return this.expectedPduResponseReceived.get();
+	}
+	
+	public void markPduRequestExpired() {
+		this.pduRequestExpired.set(true);
+	}
+	
+	public boolean wasPduRequestExpired() {
+		return this.pduRequestExpired.get();
+	}
+	
+	public void markRecoverablePduException() {
+		this.recoverablePduException.set(true);
+	}
+	
+	public boolean wasRecoverablePduException() {
+		return this.recoverablePduException.get();
+	}
+	
+	public void markActivityEndedByResponseSender() {
+		this.activityEndedByResponseSender.set(true);
+	}
+	
+	public boolean wasActivityEndedByResponseSender() {
+		return this.activityEndedByResponseSender.get();
+	}
+	
+	public void markActivityEndedByRequestSender() {
+		this.activityEndedByRequestSender.set(true);
+	}
+	
+	public boolean wasActivityEndedByRequestSender() {
+		return this.activityEndedByRequestSender.get();
 	}
 }

@@ -402,6 +402,7 @@ public class SmppSessionsImpl implements SmppSessions {
                         pduRequest), e);
             } finally {
                 if (smppServerTransaction != null) {
+                	smppServerTransaction.markPduRequestExpired();
                     smppServerResourceAdaptor.endActivity(smppServerTransaction);
                     pduRequest.setReferenceObject(null);
                 }
@@ -432,6 +433,7 @@ public class SmppSessionsImpl implements SmppSessions {
                         recoverablePduException), e);
             } finally {
                 if (smppServerTransaction != null) {
+                	smppServerTransaction.markRecoverablePduException();
                     smppServerResourceAdaptor.endActivity(smppServerTransaction);
                 }
             }

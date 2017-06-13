@@ -28,7 +28,7 @@ public class DelayedActivityEndTask extends TimerTask {
     public void run() {
         if(isActive.compareAndSet(true, false)) {
             if (this.tracer.isWarningEnabled()) {
-                this.tracer.warning("Activity with handle " + txImpl.getActivityHandle() + " ended due to smppActivityTimeout");
+            	this.tracer.severe("Activity with handle " + txImpl.getActivityHandle() + " ended due to smppActivityTimeout");
             }
             ra.endActivity(txImpl);
         }

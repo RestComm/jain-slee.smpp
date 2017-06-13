@@ -55,18 +55,26 @@ public class RequestSender extends Thread {
                     } catch (RecoverablePduException e) {
                         fireSendPduStatusEvent(EventsType.SEND_PDU_STATUS, task.getSmppServerTransaction(), task.getRequest(),
                                 null, e, false);
+                        if(task.getSmppServerTransaction() !=null)
+                        	task.getSmppServerTransaction().markActivityEndedByRequestSender();
                         smppServerResourceAdaptor.endActivity(task.getSmppServerTransaction());
                     } catch (UnrecoverablePduException e) {
                         fireSendPduStatusEvent(EventsType.SEND_PDU_STATUS, task.getSmppServerTransaction(), task.getRequest(),
                                 null, e, false);
+                        if(task.getSmppServerTransaction() !=null)
+                        	task.getSmppServerTransaction().markActivityEndedByRequestSender();
                         smppServerResourceAdaptor.endActivity(task.getSmppServerTransaction());
                     } catch (SmppTimeoutException e) {
                         fireSendPduStatusEvent(EventsType.SEND_PDU_STATUS, task.getSmppServerTransaction(), task.getRequest(),
                                 null, e, false);
+                        if(task.getSmppServerTransaction() !=null)
+                        	task.getSmppServerTransaction().markActivityEndedByRequestSender();
                         smppServerResourceAdaptor.endActivity(task.getSmppServerTransaction());
                     } catch (SmppChannelException e) {
                         fireSendPduStatusEvent(EventsType.SEND_PDU_STATUS, task.getSmppServerTransaction(), task.getRequest(),
                                 null, e, false);
+                        if(task.getSmppServerTransaction() !=null)
+                        	task.getSmppServerTransaction().markActivityEndedByRequestSender();
                         smppServerResourceAdaptor.endActivity(task.getSmppServerTransaction());
                     } catch (InterruptedException e) {
                         fireSendPduStatusEvent(EventsType.SEND_PDU_STATUS, task.getSmppServerTransaction(), task.getRequest(),
@@ -94,9 +102,17 @@ public class RequestSender extends Thread {
 
         try {
         	if(smppServerTransaction.wasExpectedPduResponseReceived())
-                tracer.severe("invoking fireSendPduStatusEvent after expectedPduResponseReceived for esme"
-                        + smppServerTransaction.getEsme().getName() + ", sequenceNumber " + request.getSequenceNumber());
-            smppServerResourceAdaptor.fireEvent(systemId, smppServerTransaction.getActivityHandle(), event);
+        		tracer.severe("invoking fireSendPduStatusEvent after expectedPduResponseReceived for esme " + getName() + ", sequenceNumber " + request.getSequenceNumber());
+        	if(smppServerTransaction.wasPduRequestExpired())
+        		tracer.severe("invoking fireSendPduStatusEvent after pduRequestExpired for esme " + getName() + ", sequenceNumber " + request.getSequenceNumber());
+        	if(smppServerTransaction.wasRecoverablePduException())
+        		tracer.severe("invoking fireSendPduStatusEvent after recoverablePduException for esme " + getName() + ", sequenceNumber " + request.getSequenceNumber());
+        	if(smppServerTransaction.wasActivityEndedByResponseSender())
+        		tracer.severe("invoking fireSendPduStatusEvent after activityEndedByResponseSender for esme " + getName() + ", sequenceNumber " + request.getSequenceNumber());
+        	if(smppServerTransaction.wasActivityEndedByRequestSender())
+        		tracer.severe("invoking fireSendPduStatusEvent after activityEndedByRequestSender for esme " + getName() + ", sequenceNumber " + request.getSequenceNumber());
+        	
+        	smppServerResourceAdaptor.fireEvent(systemId, smppServerTransaction.getActivityHandle(), event);
         } catch (Exception e) {
             tracer.severe(String.format(
                     "Received fireRecoverablePduException. Error while processing RecoverablePduException=%s", event), e);
