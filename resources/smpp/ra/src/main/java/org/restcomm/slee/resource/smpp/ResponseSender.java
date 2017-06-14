@@ -73,17 +73,18 @@ public class ResponseSender extends Thread {
                         countSendResponsePdu(smppSessionCounters, task.getResponse(), responseTime, responseTime);
                     }
                 }
+            } catch(InterruptedException ex) { 
+            	//that should be legal if queue empty or we are stopping
             } catch (Exception e) {
                 tracer.severe("Exception when sending of sendResponsePdu: " + e.getMessage(), e);
                 if (task != null) {
                     fireSendPduStatusEvent(EventsType.SEND_PDU_STATUS, task.getSmppServerTransaction(), task.getRequest(),
                             task.getResponse(), e, false);
                 }
-            }
-            finally
-            {
-            	if(task!=null)
+            } finally {
+            	if(task!=null) {
             		task.getSmppServerTransaction().releaseSemaphore();
+            	}
             }
         }
     }
