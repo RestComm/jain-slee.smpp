@@ -3,7 +3,6 @@ package org.restcomm.slee.resource.smpp;
 import org.restcomm.smpp.Esme;
 
 import com.cloudhopper.smpp.pdu.PduRequest;
-import com.cloudhopper.smpp.pdu.PduResponse;
 
 public class SmppRequestTask {
 
