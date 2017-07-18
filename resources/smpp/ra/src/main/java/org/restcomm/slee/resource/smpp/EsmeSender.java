@@ -29,4 +29,12 @@ public class EsmeSender {
     public void offerResponse(SmppResponseTask task) {
         responseThread.offer(task);
     }
+    
+    public long getRequestSenderPreviousIterationTime() {
+        return requestThread.getPreviousIterationTime();
+    }
+    
+    public long getResponseSenderPreviousIterationTime() {
+        return responseThread.getPreviousIterationTime();
+    }
 }

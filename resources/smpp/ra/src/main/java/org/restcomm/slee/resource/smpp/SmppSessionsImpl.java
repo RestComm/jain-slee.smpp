@@ -1,6 +1,10 @@
 package org.restcomm.slee.resource.smpp;
 
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.slee.SLEEException;
@@ -64,9 +68,42 @@ public class SmppSessionsImpl implements SmppSessions {
                     SmppSessionHandlerInterfaceImpl.class.getSimpleName());
         }
         this.smppSessionHandlerInterfaceImpl = new SmppSessionHandlerInterfaceImpl();
-
+        startInactivityTimer();
     }
 
+    private Timer esmeSenderInactiveStateTimer;
+    private void startInactivityTimer() {
+        TimerTask esmeSenderInactiveStateThread = new TimerTask() {
+            
+            private long idleStateTimeout = 60 * 1000;
+            
+            @Override
+            public void run() {
+                try {
+                    Iterator<Entry<String, EsmeSender>> iterator = esmeSenderThreads.entrySet().iterator();
+                    while(iterator.hasNext()) {
+                        
+                        Entry<String, EsmeSender> entry = iterator.next();
+                        String esmeName = entry.getKey();
+                        EsmeSender sender = entry.getValue();
+                        
+                        long diff = System.currentTimeMillis() - sender.getRequestSenderPreviousIterationTime();
+                        if(diff > idleStateTimeout) {
+                            tracer.warning(esmeName + " RequestSender has been idle for " + diff);
+                        }
+                        
+                        diff = System.currentTimeMillis() - sender.getResponseSenderPreviousIterationTime();
+                        if(diff > idleStateTimeout) {
+                            tracer.warning(esmeName + " ResponseSender has been idle for " + diff);
+                        }
+                    }
+                } catch(Exception e) {
+                }
+            }
+        };
+        esmeSenderInactiveStateTimer.scheduleAtFixedRate(esmeSenderInactiveStateThread, 0, 10000L);
+    }
+    
     protected SmppSessionHandlerInterface getSmppSessionHandlerInterface() {
         return this.smppSessionHandlerInterfaceImpl;
     }

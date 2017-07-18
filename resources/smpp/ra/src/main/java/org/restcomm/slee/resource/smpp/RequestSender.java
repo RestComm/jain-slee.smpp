@@ -23,7 +23,7 @@ public class RequestSender extends Thread {
     private Tracer tracer;
 
     private AtomicLong lastOfferTimestamp = new AtomicLong();
-    
+
     public RequestSender(SmppServerResourceAdaptor smppServerResourceAdaptor, Tracer tracer, String name, long timeout) {
         super(name);
         this.timeout = timeout;
@@ -145,5 +145,9 @@ public class RequestSender extends Thread {
             tracer.severe(String.format(
                     "Received fireRecoverablePduException. Error while processing RecoverablePduException=%s", event), e);
         }
+    }
+    
+    public long getPreviousIterationTime() {
+        return this.lastOfferTimestamp.get();
     }
 }

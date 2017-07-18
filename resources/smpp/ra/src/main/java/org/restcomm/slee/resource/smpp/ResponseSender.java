@@ -57,6 +57,7 @@ public class ResponseSender extends Thread {
                     task.getSmppServerTransaction().acquireSemaphore();
                     
                     try {
+                        lastOfferTimestamp.set(System.currentTimeMillis());
                         defaultSmppSession.sendResponsePdu(task.getResponse());
                         fireSendPduStatusEvent(EventsType.SEND_PDU_STATUS, task.getSmppServerTransaction(), task.getRequest(),
                                 task.getResponse(), null, true);
@@ -183,5 +184,9 @@ public class ResponseSender extends Thread {
             // TODO: adding here statistics for SUBMIT_MULTI ?
             }
         }
+    }
+
+    public long getPreviousIterationTime() {
+        return lastOfferTimestamp.get();
     }
 }
