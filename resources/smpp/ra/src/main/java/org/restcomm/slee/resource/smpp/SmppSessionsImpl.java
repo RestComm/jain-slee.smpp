@@ -71,7 +71,7 @@ public class SmppSessionsImpl implements SmppSessions {
         startInactivityTimer();
     }
 
-    private Timer esmeSenderInactiveStateTimer;
+    private Timer esmeSenderInactiveStateTimer = new Timer();
     private void startInactivityTimer() {
         TimerTask esmeSenderInactiveStateThread = new TimerTask() {
             
