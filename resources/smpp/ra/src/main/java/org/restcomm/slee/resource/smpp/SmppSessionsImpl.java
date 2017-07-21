@@ -87,14 +87,18 @@ public class SmppSessionsImpl implements SmppSessions {
                         String esmeName = entry.getKey();
                         EsmeSender sender = entry.getValue();
                         
-                        long diff = System.currentTimeMillis() - sender.getRequestSenderPreviousIterationTime();
-                        if(diff > idleStateTimeout) {
-                            tracer.warning(esmeName + " RequestSender has been idle for " + diff);
+                        if(sender.getRequestSenderPreviousIterationTime() > 0) {
+                            long diff = System.currentTimeMillis() - sender.getRequestSenderPreviousIterationTime();
+                            if(diff > idleStateTimeout) {
+                                tracer.warning(esmeName + " RequestSender has been idle for " + diff);
+                            } 
                         }
                         
-                        diff = System.currentTimeMillis() - sender.getResponseSenderPreviousIterationTime();
-                        if(diff > idleStateTimeout) {
-                            tracer.warning(esmeName + " ResponseSender has been idle for " + diff);
+                        if(sender.getResponseSenderPreviousIterationTime() > 0) {
+                            long diff = System.currentTimeMillis() - sender.getResponseSenderPreviousIterationTime();
+                            if(diff > idleStateTimeout) {
+                                tracer.warning(esmeName + " ResponseSender has been idle for " + diff);
+                            }
                         }
                     }
                 } catch(Exception e) {

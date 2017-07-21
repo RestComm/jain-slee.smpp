@@ -108,7 +108,7 @@ public class ResponseSender extends Thread {
         int queueSize = queue.size();
         for (int i = 0; i < SIZE_STEP_ARRAY.length; i++) {
             int step = SIZE_STEP_ARRAY[i];
-            if(queueSize % step == 0) {
+            if(queueSize == step) {
                 tracer.warning(EsmeSender.LOGGER_TAG + " response queue size reached " + step);
                 break;
             }
@@ -123,7 +123,7 @@ public class ResponseSender extends Thread {
             if(diff > 1000) {
                 for (int i = 0; i < SIZE_STEP_ARRAY_2.length; i++) {
                     int step = SIZE_STEP_ARRAY_2[i];
-                    if(queueSize % step == 0) {
+                    if(queueSize == step) {
                         tracer.warning(EsmeSender.LOGGER_TAG + " previous response task takes too long to execute, diff:" + diff + "ms");
                         break;
                     }
