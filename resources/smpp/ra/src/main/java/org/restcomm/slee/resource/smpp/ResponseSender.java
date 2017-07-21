@@ -30,7 +30,7 @@ public class ResponseSender extends Thread {
         this.timeout = timeout;
         this.smppServerResourceAdaptor = smppServerResourceAdaptor;
         this.tracer = tracer;
-        this.tracer.warning(name + "created");
+        this.tracer.warning(EsmeSender.LOGGER_TAG + " " + name + " created");
     }
 
     public void deactivate() {

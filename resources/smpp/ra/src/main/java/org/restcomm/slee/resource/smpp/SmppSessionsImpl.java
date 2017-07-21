@@ -90,14 +90,14 @@ public class SmppSessionsImpl implements SmppSessions {
                         if(sender.getRequestSenderPreviousIterationTime() > 0) {
                             long diff = System.currentTimeMillis() - sender.getRequestSenderPreviousIterationTime();
                             if(diff > idleStateTimeout) {
-                                tracer.warning(esmeName + " RequestSender has been idle for " + diff);
+                                tracer.warning(EsmeSender.LOGGER_TAG + " " + esmeName + " RequestSender has been idle for " + diff);
                             } 
                         }
                         
                         if(sender.getResponseSenderPreviousIterationTime() > 0) {
                             long diff = System.currentTimeMillis() - sender.getResponseSenderPreviousIterationTime();
                             if(diff > idleStateTimeout) {
-                                tracer.warning(esmeName + " ResponseSender has been idle for " + diff);
+                                tracer.warning(EsmeSender.LOGGER_TAG + " " + esmeName + " ResponseSender has been idle for " + diff);
                             }
                         }
                     }
