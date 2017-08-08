@@ -21,8 +21,8 @@
 
 	<properties>
 		<ch.smpp.version>5.0.13</ch.smpp.version>
-		<smpp-extensions.version>7.1.43</smpp-extensions.version>
-		<restcomm.slee.ext.version>7.0.64</restcomm.slee.ext.version>
+		<smpp-extensions.version>7.1.44</smpp-extensions.version>
+		<restcomm.slee.ext.version>7.0.63</restcomm.slee.ext.version>
 		<maven.du.plugin.jboss5.version>3.0.14</maven.du.plugin.jboss5.version>
 		<maven.du.plugin.wildfly.version>4.0.2</maven.du.plugin.wildfly.version>
 		<testng.version>6.8</testng.version>
