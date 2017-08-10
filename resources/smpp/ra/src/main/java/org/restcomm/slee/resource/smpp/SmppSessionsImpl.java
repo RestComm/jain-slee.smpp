@@ -134,7 +134,7 @@ public class SmppSessionsImpl implements SmppSessions {
         }
 
         SmppTransactionHandle smppServerTransactionHandle = new SmppTransactionHandle(esme.getName(),
-                request.getSequenceNumber(), SmppTransactionType.OUTGOING);
+                request.getSequenceNumber(), SmppTransactionType.OUTGOING, esme.getLocalSessionId());
 
         SmppTransactionImpl smppServerTransaction = new SmppTransactionImpl(request, esme, smppServerTransactionHandle,
                 smppServerResourceAdaptor);
@@ -245,7 +245,7 @@ public class SmppSessionsImpl implements SmppSessions {
                     }
 
                     smppServerTransactionHandle = new SmppTransactionHandle(this.esme.getName(),
-                            pduRequest.getSequenceNumber(), SmppTransactionType.INCOMING);
+                            pduRequest.getSequenceNumber(), SmppTransactionType.INCOMING, this.esme.getLocalSessionId());
                     smppServerTransaction = new SmppTransactionImpl(pduRequest, this.esme, smppServerTransactionHandle,
                             smppServerResourceAdaptor);
 
@@ -270,7 +270,7 @@ public class SmppSessionsImpl implements SmppSessions {
                     }
 
                     smppServerTransactionHandle = new SmppTransactionHandle(this.esme.getName(),
-                            pduRequest.getSequenceNumber(), SmppTransactionType.INCOMING);
+                            pduRequest.getSequenceNumber(), SmppTransactionType.INCOMING, this.esme.getLocalSessionId());
                     smppServerTransaction = new SmppTransactionImpl(pduRequest, this.esme, smppServerTransactionHandle,
                             smppServerResourceAdaptor);
                     smppServerResourceAdaptor.startNewSmppServerTransactionActivity(smppServerTransaction);
@@ -294,7 +294,7 @@ public class SmppSessionsImpl implements SmppSessions {
                     }
 
                     smppServerTransactionHandle = new SmppTransactionHandle(this.esme.getName(),
-                            pduRequest.getSequenceNumber(), SmppTransactionType.INCOMING);
+                            pduRequest.getSequenceNumber(), SmppTransactionType.INCOMING, this.esme.getLocalSessionId());
                     smppServerTransaction = new SmppTransactionImpl(pduRequest, this.esme, smppServerTransactionHandle,
                             smppServerResourceAdaptor);
                     smppServerResourceAdaptor.startNewSmppServerTransactionActivity(smppServerTransaction);
@@ -317,7 +317,7 @@ public class SmppSessionsImpl implements SmppSessions {
                     }
 
                     smppServerTransactionHandle = new SmppTransactionHandle(this.esme.getName(),
-                            pduRequest.getSequenceNumber(), SmppTransactionType.INCOMING);
+                            pduRequest.getSequenceNumber(), SmppTransactionType.INCOMING, this.esme.getLocalSessionId());
                     smppServerTransaction = new SmppTransactionImpl(pduRequest, this.esme, smppServerTransactionHandle,
                             smppServerResourceAdaptor);
 
