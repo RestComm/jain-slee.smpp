@@ -1,5 +1,6 @@
 package org.restcomm.slee.resource.smpp;
 
+import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -125,7 +126,13 @@ public class SmppSessionsImpl implements SmppSessions {
 
         EsmeSender esmeSender = esmeSenderThreads.get(esme.getName());
         if (esmeSender == null) {
-            throw new IllegalStateException("Esme sender not found");
+            //Print ALL NODES
+            Enumeration<String> enumerator = esmeSenderThreads.keys();
+            while(enumerator.hasMoreElements()) {
+                String esmeSenderName = enumerator.nextElement();
+                tracer.warning(EsmeSender.LOGGER_TAG2 + " " + esmeSenderName + " found in sender list");
+            }
+            throw new IllegalStateException("Esme sender " + esme.getName() + " not found");
         }
 
         if (!request.hasSequenceNumberAssigned()) {
@@ -185,6 +192,7 @@ public class SmppSessionsImpl implements SmppSessions {
             if (esme != null && esme.getName() != null) {
                 EsmeSender esmeSender = esmeSenderThreads.remove(esme.getName());
                 if (esmeSender != null) {
+                    tracer.warning(EsmeSender.LOGGER_TAG2 + " " + esme.getName() + " is being deactivated");
                     esmeSender.deactivate();
                 }
             }
@@ -201,9 +209,11 @@ public class SmppSessionsImpl implements SmppSessions {
 
             EsmeSender existingQueue = esmeSenderThreads.put(esme.getName(), esmeSender);
             if (existingQueue != null) {
+                tracer.warning(EsmeSender.LOGGER_TAG2 + " " + esme.getName() + " is being deactivated");
                 existingQueue.deactivate();
             }
 
+            tracer.warning(EsmeSender.LOGGER_TAG2 + " " + esme.getName() + " is being started");
             esmeSender.start();
 
             return new SmppSessionHandlerImpl(esme);

@@ -3,6 +3,7 @@ package org.restcomm.slee.resource.smpp;
 public class EsmeSender {
 
     public static final String LOGGER_TAG = "TAG ISSUE:34388";
+    public static final String LOGGER_TAG2 = "TAG ISSUE:34633";
     
     private RequestSender requestThread;
     private ResponseSender responseThread;
