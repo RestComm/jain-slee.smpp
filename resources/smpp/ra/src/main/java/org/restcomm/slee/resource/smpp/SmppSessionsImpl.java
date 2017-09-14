@@ -1,5 +1,6 @@
 package org.restcomm.slee.resource.smpp;
 
+import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -90,18 +91,14 @@ public class SmppSessionsImpl implements SmppSessions {
                         if(sender.getRequestSenderPreviousIterationTime() > 0) {
                             long diff = System.currentTimeMillis() - sender.getRequestSenderPreviousIterationTime();
                             if(diff > idleStateTimeout) {
-                                if (tracer.isFineEnabled()) {
-                                    tracer.fine(esmeName + " RequestSender has been idle for " + diff);
-                                }
+                                tracer.warning(esmeName + " RequestSender has been idle for " + diff);
                             } 
                         }
                         
                         if(sender.getResponseSenderPreviousIterationTime() > 0) {
                             long diff = System.currentTimeMillis() - sender.getResponseSenderPreviousIterationTime();
                             if(diff > idleStateTimeout) {
-                                if (tracer.isFineEnabled()) {
-                                    tracer.fine(esmeName + " ResponseSender has been idle for " + diff);
-                                }
+                                tracer.warning(esmeName + " ResponseSender has been idle for " + diff);
                             }
                         }
                     }
@@ -129,7 +126,15 @@ public class SmppSessionsImpl implements SmppSessions {
 
         EsmeSender esmeSender = esmeSenderThreads.get(esme.getName());
         if (esmeSender == null) {
-            throw new IllegalStateException("Esme sender not found");
+            //Print ALL NODES
+            Enumeration<String> enumerator = esmeSenderThreads.keys();
+            while(enumerator.hasMoreElements()) {
+                String esmeSenderName = enumerator.nextElement();
+                if (tracer.isFineEnabled()) {
+                    tracer.fine(esmeSenderName + " found in sender list");
+                }
+            }
+            throw new IllegalStateException("Esme sender " + esme.getName() + " not found");
         }
 
         if (!request.hasSequenceNumberAssigned()) {
@@ -138,7 +143,7 @@ public class SmppSessionsImpl implements SmppSessions {
         }
 
         SmppTransactionHandle smppServerTransactionHandle = new SmppTransactionHandle(esme.getName(),
-                request.getSequenceNumber(), SmppTransactionType.OUTGOING);
+                request.getSequenceNumber(), SmppTransactionType.OUTGOING, esme.getLocalSessionId());
 
         SmppTransactionImpl smppServerTransaction = new SmppTransactionImpl(request, esme, smppServerTransactionHandle,
                 smppServerResourceAdaptor);
@@ -189,6 +194,7 @@ public class SmppSessionsImpl implements SmppSessions {
             if (esme != null && esme.getName() != null) {
                 EsmeSender esmeSender = esmeSenderThreads.remove(esme.getName());
                 if (esmeSender != null) {
+                    tracer.warning(esme.getName() + " is being deactivated");
                     esmeSender.deactivate();
                 }
             }
@@ -205,9 +211,10 @@ public class SmppSessionsImpl implements SmppSessions {
 
             EsmeSender existingQueue = esmeSenderThreads.put(esme.getName(), esmeSender);
             if (existingQueue != null) {
+                tracer.warning(esme.getName() + " is being deactivated");
                 existingQueue.deactivate();
             }
-
+                tracer.warning(esme.getName() + " is being started");
             esmeSender.start();
 
             return new SmppSessionHandlerImpl(esme);
@@ -249,7 +256,7 @@ public class SmppSessionsImpl implements SmppSessions {
                     }
 
                     smppServerTransactionHandle = new SmppTransactionHandle(this.esme.getName(),
-                            pduRequest.getSequenceNumber(), SmppTransactionType.INCOMING);
+                            pduRequest.getSequenceNumber(), SmppTransactionType.INCOMING, this.esme.getLocalSessionId());
                     smppServerTransaction = new SmppTransactionImpl(pduRequest, this.esme, smppServerTransactionHandle,
                             smppServerResourceAdaptor);
 
@@ -274,7 +281,7 @@ public class SmppSessionsImpl implements SmppSessions {
                     }
 
                     smppServerTransactionHandle = new SmppTransactionHandle(this.esme.getName(),
-                            pduRequest.getSequenceNumber(), SmppTransactionType.INCOMING);
+                            pduRequest.getSequenceNumber(), SmppTransactionType.INCOMING, this.esme.getLocalSessionId());
                     smppServerTransaction = new SmppTransactionImpl(pduRequest, this.esme, smppServerTransactionHandle,
                             smppServerResourceAdaptor);
                     smppServerResourceAdaptor.startNewSmppServerTransactionActivity(smppServerTransaction);
@@ -298,7 +305,7 @@ public class SmppSessionsImpl implements SmppSessions {
                     }
 
                     smppServerTransactionHandle = new SmppTransactionHandle(this.esme.getName(),
-                            pduRequest.getSequenceNumber(), SmppTransactionType.INCOMING);
+                            pduRequest.getSequenceNumber(), SmppTransactionType.INCOMING, this.esme.getLocalSessionId());
                     smppServerTransaction = new SmppTransactionImpl(pduRequest, this.esme, smppServerTransactionHandle,
                             smppServerResourceAdaptor);
                     smppServerResourceAdaptor.startNewSmppServerTransactionActivity(smppServerTransaction);
@@ -321,7 +328,7 @@ public class SmppSessionsImpl implements SmppSessions {
                     }
 
                     smppServerTransactionHandle = new SmppTransactionHandle(this.esme.getName(),
-                            pduRequest.getSequenceNumber(), SmppTransactionType.INCOMING);
+                            pduRequest.getSequenceNumber(), SmppTransactionType.INCOMING, this.esme.getLocalSessionId());
                     smppServerTransaction = new SmppTransactionImpl(pduRequest, this.esme, smppServerTransactionHandle,
                             smppServerResourceAdaptor);
 
