@@ -2,6 +2,7 @@ package org.restcomm.slee.resource.smpp;
 
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import javax.slee.facilities.Tracer;
 
@@ -22,6 +23,8 @@ public class ResponseSender extends Thread {
     private SmppServerResourceAdaptor smppServerResourceAdaptor;
     private Tracer tracer;
 
+    private AtomicLong lastOfferTimestamp = new AtomicLong();
+    
     public ResponseSender(SmppServerResourceAdaptor smppServerResourceAdaptor, Tracer tracer, String name, long timeout) {
         super(name);
         this.timeout = timeout;
@@ -52,6 +55,7 @@ public class ResponseSender extends Thread {
                     task.getSmppServerTransaction().acquireSemaphore();
                     
                     try {
+                        lastOfferTimestamp.set(System.currentTimeMillis());
                         defaultSmppSession.sendResponsePdu(task.getResponse());
                         fireSendPduStatusEvent(EventsType.SEND_PDU_STATUS, task.getSmppServerTransaction(), task.getRequest(),
                                 task.getResponse(), null, true);
@@ -90,7 +94,40 @@ public class ResponseSender extends Thread {
     }
 
     public void offer(SmppResponseTask task) {
+        if (tracer.isFineEnabled()) {
+            logQueueSizeIfNecessary();
+            logPreviousTaskLongRunIfNecessary();
+        }
         queue.offer(task);
+    }
+
+    private static final int[] SIZE_STEP_ARRAY  = {10,100,200,500,1000};
+    private void logQueueSizeIfNecessary() {
+        int queueSize = queue.size();
+        for (int i = 1; i < SIZE_STEP_ARRAY.length; i++) {
+            int step = SIZE_STEP_ARRAY[i];
+            if(queueSize == step) {
+                tracer.fine("Response queue size reached " + step);
+                break;
+            }
+        }
+    }
+    
+    private static final int[] SIZE_STEP_ARRAY_2  = {1, 10,100,200,500,1000};
+    private void logPreviousTaskLongRunIfNecessary() {
+        int queueSize = queue.size();
+        if(queueSize > 0) {
+            long diff = System.currentTimeMillis() - lastOfferTimestamp.get();
+            if(diff > 1000) {
+                for (int i = 0; i < SIZE_STEP_ARRAY_2.length; i++) {
+                    int step = SIZE_STEP_ARRAY_2[i];
+                    if(queueSize == step) {
+                        tracer.fine("Previous response task takes too long to execute, diff:" + diff + "ms");
+                        break;
+                    }
+                } 
+            }
+        }
     }
 
     private void fireSendPduStatusEvent(String systemId, SmppTransactionImpl smppServerTransaction, PduRequest request,
@@ -145,5 +182,9 @@ public class ResponseSender extends Thread {
             // TODO: adding here statistics for SUBMIT_MULTI ?
             }
         }
+    }
+
+    public long getPreviousIterationTime() {
+        return lastOfferTimestamp.get();
     }
 }
