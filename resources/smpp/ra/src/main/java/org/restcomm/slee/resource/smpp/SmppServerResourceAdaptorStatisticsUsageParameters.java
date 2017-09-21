@@ -23,8 +23,6 @@ package org.restcomm.slee.resource.smpp;
 
 public interface SmppServerResourceAdaptorStatisticsUsageParameters {
 
-    public void incrementCalls(long value);
     public void incrementMessages(long value);
-    public void incrementSeconds(long value);
 
 }

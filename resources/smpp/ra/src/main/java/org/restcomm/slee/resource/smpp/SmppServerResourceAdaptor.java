@@ -343,4 +343,7 @@ public class SmppServerResourceAdaptor implements ResourceAdaptor {
 		}
 	}
 
+	public SmppServerResourceAdaptorStatisticsUsageParameters getStatisticsUsageParameterSet() {
+	    return this.defaultUsageParameters;
+	}
 }

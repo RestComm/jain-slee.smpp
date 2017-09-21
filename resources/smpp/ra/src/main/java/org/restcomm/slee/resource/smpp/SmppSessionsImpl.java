@@ -242,6 +242,7 @@ public class SmppSessionsImpl implements SmppSessions {
                 case SmppConstants.CMD_ID_UNBIND:
                     break;
                 case SmppConstants.CMD_ID_SUBMIT_SM:
+                    smppServerResourceAdaptor.getStatisticsUsageParameterSet().incrementMessages(1L);
                     SubmitSm submitSm = (SubmitSm) pduRequest;
                     sourceAddress = submitSm.getSourceAddress();
                     if (!this.esme.isSourceAddressMatching(sourceAddress)) {
@@ -267,6 +268,7 @@ public class SmppSessionsImpl implements SmppSessions {
                     // Return null. Let SBB send response back
                     return null;
                 case SmppConstants.CMD_ID_DATA_SM:
+                    smppServerResourceAdaptor.getStatisticsUsageParameterSet().incrementMessages(1L);
                     DataSm dataSm = (DataSm) pduRequest;
                     sourceAddress = dataSm.getSourceAddress();
                     if (!this.esme.isSourceAddressMatching(sourceAddress)) {
@@ -291,6 +293,7 @@ public class SmppSessionsImpl implements SmppSessions {
                     // Return null. Let SBB send response back
                     return null;
                 case SmppConstants.CMD_ID_DELIVER_SM:
+                    smppServerResourceAdaptor.getStatisticsUsageParameterSet().incrementMessages(1L);
                     DeliverSm deliverSm = (DeliverSm) pduRequest;
                     sourceAddress = deliverSm.getSourceAddress();
                     if (!this.esme.isSourceAddressMatching(sourceAddress)) {
@@ -314,6 +317,7 @@ public class SmppSessionsImpl implements SmppSessions {
                     return null;
 
                 case SmppConstants.CMD_ID_SUBMIT_MULTI:
+                    smppServerResourceAdaptor.getStatisticsUsageParameterSet().incrementMessages(1L);
                     SubmitMulti submitMulti = (SubmitMulti) pduRequest;
                     sourceAddress = submitMulti.getSourceAddress();
                     if (!this.esme.isSourceAddressMatching(sourceAddress)) {
