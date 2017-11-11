@@ -109,7 +109,7 @@ public class SenderThreadTest {
         Mockito.doNothing().when(adaptor).fireEvent(eq(EventsType.SEND_PDU_STATUS), eq(handle), anyObject());
 
         // create tested object
-        RequestSender sThread = new RequestSender(adaptor, tracer, "testConcurrentReq", reqTimeout);
+        RequestSender sThread = new RequestSender(adaptor, tracer, esme, "testConcurrentReq", reqTimeout);
         sThread.start();
 
         // exercise concurrently
@@ -204,7 +204,7 @@ public class SenderThreadTest {
         Mockito.doNothing().when(adaptor).fireEvent(eq(EventsType.SEND_PDU_STATUS), eq(handle), anyObject());
 
         // create tested object
-        final RequestSender sThread = new RequestSender(adaptor, tracer, "deactivateWhileSendingReq", reqTimeout);
+        final RequestSender sThread = new RequestSender(adaptor, tracer, esme, "deactivateWhileSendingReq", reqTimeout);
         sThread.start();
 
         // exercise concurrently
@@ -293,7 +293,7 @@ public class SenderThreadTest {
         SmppServerResourceAdaptor adaptor = mock(SmppServerResourceAdaptor.class);
 
         // create tested object
-        final RequestSender sThread = new RequestSender(adaptor, tracer, "deactivateWhileInactivity", reqTimeout);
+        final RequestSender sThread = new RequestSender(adaptor, tracer, esme, "deactivateWhileInactivity", reqTimeout);
         sThread.start();
 
         sThread.deactivate();

@@ -203,7 +203,7 @@ public class SmppSessionsImpl implements SmppSessions {
         @Override
         public SmppSessionHandler createNewSmppSessionHandler(Esme esme) {
 
-            RequestSender requestThread = new RequestSender(smppServerResourceAdaptor, tracer, "SMPP ESME Request Sender "
+            RequestSender requestThread = new RequestSender(smppServerResourceAdaptor, tracer, esme, "SMPP ESME Request Sender "
                     + esme.getName(), SMPP_REQUEST_TIMEOUT);
             ResponseSender responseThread = new ResponseSender(smppServerResourceAdaptor, tracer, "SMPP ESME Response Sender "
                     + esme.getName(), SMPP_RESPONSE_TIMEOUT);
