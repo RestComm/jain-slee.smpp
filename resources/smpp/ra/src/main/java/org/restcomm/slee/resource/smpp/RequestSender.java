@@ -67,7 +67,7 @@ public class RequestSender extends Thread {
 
                 try {
                     task = queue.poll(timeout, TimeUnit.MILLISECONDS);
-                    if (esme.getNormalThreshold() != -1 && queue.size() == esme.getNormalThreshold()) {
+                    if (esme.getNormalThreshold() != -1 && queue.size() <= esme.getNormalThreshold() && esme.isOverloaded()) {
                         esme.setOverloaded(false);
                     }
                 } finally {
@@ -136,7 +136,7 @@ public class RequestSender extends Thread {
 
         try {
             queue.offer(task);
-            if (esme.getOverloadThreshold() != -1 && queue.size() == esme.getOverloadThreshold()) {
+            if (esme.getOverloadThreshold() != -1 && queue.size() >= esme.getOverloadThreshold() && !esme.isOverloaded()) {
                 esme.setOverloaded(true);
             }
         } finally {
