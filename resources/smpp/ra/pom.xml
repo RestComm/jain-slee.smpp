@@ -64,7 +64,20 @@
             <artifactId>slf4j-log4j12</artifactId>
             <version>1.5.2</version>
             <scope>test</scope>
-        </dependency>			
+        </dependency>
+        
+        <dependency>
+			<groupId>org.mobicents.tools</groupId>
+			<artifactId>sip-balancer-jar</artifactId>
+			<version>${restcomm.load.balancer.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.mobicents.tools</groupId>
+			<artifactId>heartbeat-api</artifactId>
+			<version>${restcomm.load.balancer.version}</version>
+			<scope>provided</scope>
+		</dependency>			
 	</dependencies>
 
 	<profiles>

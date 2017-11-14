@@ -1,6 +1,9 @@
 package org.restcomm.slee.resource.smpp;
 
+import javax.management.MBeanServer;
 import javax.management.ObjectName;
+
+import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -28,9 +31,14 @@ import javax.slee.resource.StartActivityException;
 import javax.slee.resource.UnrecognizedActivityHandleException;
 
 import org.jboss.mx.util.MBeanServerLocator;
+import org.restcomm.slee.resource.smpp.heartbeat.SmppLoadBalancerHeartBeatingService;
+import org.restcomm.slee.resource.smpp.heartbeat.SmppLoadBalancerHeartBeatingServiceImpl;
 import org.restcomm.smpp.SmppManagement;
 
+import java.io.IOException;
 import java.lang.management.ManagementFactory;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 
 public class SmppServerResourceAdaptor implements ResourceAdaptor {
 
@@ -46,6 +54,9 @@ public class SmppServerResourceAdaptor implements ResourceAdaptor {
 
 	private ConcurrentHashMap<SmppTransactionImpl,DelayedActivityEndTask> activityEndTasks = new ConcurrentHashMap<SmppTransactionImpl,DelayedActivityEndTask>();
 	
+	private Properties loadBalancerHeartBeatingServiceProperties;
+    private SmppLoadBalancerHeartBeatingService loadBalancerHeartBeatingService;
+    
 	public SmppServerResourceAdaptor() {
 		// TODO Auto-generated constructor stub
 	}
@@ -182,7 +193,10 @@ public class SmppServerResourceAdaptor implements ResourceAdaptor {
 					}
 				}
 			}
-
+			
+			loadBalancerHeartBeatingService = initHeartBeatingService();
+			loadBalancerHeartBeatingService.start();
+			
 		} catch (Exception e) {
 			this.tracer.severe("Failed to activate SMPP Server RA ", e);
 		}
@@ -198,6 +212,7 @@ public class SmppServerResourceAdaptor implements ResourceAdaptor {
 		if (tracer.isFineEnabled()) {
 			tracer.fine("Configuring RA Entity " + this.raContext.getEntityName());
 		}
+		loadBalancerHeartBeatingServiceProperties = prepareHeartBeatingServiceProperties(properties);
 	}
 
 	@Override
@@ -209,7 +224,13 @@ public class SmppServerResourceAdaptor implements ResourceAdaptor {
 		} catch (Exception e) {
 			tracer.severe("Error while inactivating RA Entity " + this.raContext.getEntityName(), e);
 		}
-
+		
+		try {
+		    loadBalancerHeartBeatingService.stop();
+            loadBalancerHeartBeatingService = null;
+		} catch (Exception e) {
+            tracer.severe("Error while stopping RAs LB heartbeating service " + this.raContext.getEntityName(), e);
+        }
 		if (tracer.isInfoEnabled()) {
 			tracer.info("Inactivated RA Entity " + entityName);
 		}
@@ -223,12 +244,98 @@ public class SmppServerResourceAdaptor implements ResourceAdaptor {
 
 	@Override
 	public void raUnconfigure() {
+	    loadBalancerHeartBeatingServiceProperties = null;
 	}
 
 	@Override
 	public void raVerifyConfiguration(ConfigProperties properties) throws InvalidConfigurationException {
+	    try {
+            checkAddressAndPortProperty(SmppLoadBalancerHeartBeatingServiceImpl.LOCAL_PORT, properties);
+            checkAddressAndPortProperty(SmppLoadBalancerHeartBeatingServiceImpl.LOCAL_SSL_PORT, properties);
+            checkBalancersProperty(properties);
+            checkHeartBeatingServiceClassNameProperty(properties);
+        } catch (Throwable e) {
+            throw new InvalidConfigurationException(e.getMessage(),e);
+        }
 	}
 
+	private void checkAddressAndPortProperty(String portPropertyName, ConfigProperties properties) throws IOException {
+        ConfigProperties.Property property = properties.getProperty(portPropertyName);
+        if(property !=null) {
+            Integer localHttpPort = (Integer) property.getValue();
+            if(localHttpPort != null && localHttpPort != -1) {
+                String localHttpAddress = (String) properties.getProperty(SmppLoadBalancerHeartBeatingServiceImpl.LOCAL_ADDRESS).getValue();
+                if(localHttpAddress !=null && !localHttpAddress.isEmpty()) {
+                    InetSocketAddress sockAddress = new InetSocketAddress(localHttpAddress, localHttpPort);
+                    checkSocketAddress(sockAddress);
+                }
+            }
+        }
+    }
+    
+    private void checkSocketAddress(InetSocketAddress address) throws IOException {
+        Socket s = new Socket();
+        try {
+            s.connect(address);
+        } finally {
+            s.close();
+        }
+    }
+    
+    private void checkBalancersProperty(ConfigProperties properties) {
+        String balancers = (String) properties.getProperty(SmppLoadBalancerHeartBeatingService.BALANCERS).getValue();
+        if(balancers !=null && !balancers.isEmpty()) {
+            String[] segments = balancers.split(SmppLoadBalancerHeartBeatingServiceImpl.BALANCERS_CHAR_SEPARATOR);
+            for(String segment : segments) {
+                String [] addressAndPort = segment.split(SmppLoadBalancerHeartBeatingServiceImpl.BALANCER_PORT_CHAR_SEPARATOR);
+                Integer.parseInt(addressAndPort[1]);
+            }
+        }
+    }
+    
+    private void checkHeartBeatingServiceClassNameProperty(ConfigProperties properties) throws ClassNotFoundException {
+        String httpBalancerHeartBeatServiceClassName = (String) properties.getProperty(SmppLoadBalancerHeartBeatingService.LB_HB_SERVICE_CLASS_NAME).getValue();
+        if(httpBalancerHeartBeatServiceClassName !=null && !httpBalancerHeartBeatServiceClassName.isEmpty()) {
+            Class.forName(httpBalancerHeartBeatServiceClassName);
+        }
+    }
+    
+    private SmppLoadBalancerHeartBeatingService initHeartBeatingService() throws Exception {
+        int smppBindPort = SmppManagement.getInstance().getSmppServerManagement().getBindPort();
+        loadBalancerHeartBeatingServiceProperties.setProperty(SmppLoadBalancerHeartBeatingServiceImpl.LOCAL_PORT, String.valueOf(smppBindPort));
+        String httpBalancerHeartBeatServiceClassName = (String) loadBalancerHeartBeatingServiceProperties.getProperty(SmppLoadBalancerHeartBeatingService.LB_HB_SERVICE_CLASS_NAME);
+        SmppLoadBalancerHeartBeatingService service = (SmppLoadBalancerHeartBeatingService)Class.forName(httpBalancerHeartBeatServiceClassName).newInstance();
+        MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
+        String stackName = this.raContext.getEntityName();
+        service.init(this.raContext,mBeanServer, stackName, loadBalancerHeartBeatingServiceProperties);
+        return service;
+    }
+    
+    private Properties prepareHeartBeatingServiceProperties(ConfigProperties configProperties) {
+        Properties properties = new Properties();
+        ConfigProperties.Property  sslPortProperty = configProperties.getProperty(SmppLoadBalancerHeartBeatingServiceImpl.LOCAL_SSL_PORT);
+        if(sslPortProperty != null) {
+            properties.setProperty(SmppLoadBalancerHeartBeatingServiceImpl.LOCAL_SSL_PORT, sslPortProperty.getValue().toString());          
+        }
+        properties.setProperty(SmppLoadBalancerHeartBeatingServiceImpl.LOCAL_ADDRESS, prepareLocalHttpAddressProperty(configProperties));
+        properties.setProperty(SmppLoadBalancerHeartBeatingServiceImpl.BALANCERS, (String)configProperties.getProperty(SmppLoadBalancerHeartBeatingServiceImpl.BALANCERS).getValue());
+        properties.setProperty(SmppLoadBalancerHeartBeatingServiceImpl.HEARTBEAT_INTERVAL, (String)configProperties.getProperty(SmppLoadBalancerHeartBeatingServiceImpl.HEARTBEAT_INTERVAL).getValue().toString());
+        properties.setProperty(SmppLoadBalancerHeartBeatingServiceImpl.LB_HB_SERVICE_CLASS_NAME, (String)configProperties.getProperty(SmppLoadBalancerHeartBeatingServiceImpl.LB_HB_SERVICE_CLASS_NAME).getValue());
+        return properties;
+    }
+    
+    private String prepareLocalHttpAddressProperty(ConfigProperties configProperties) {
+        ConfigProperties.Property localAddressProperty = configProperties.getProperty(SmppLoadBalancerHeartBeatingServiceImpl.LOCAL_ADDRESS);
+        String localHttpAddress = null;
+        if(localAddressProperty == null || localAddressProperty.getValue() == null || ((String) localAddressProperty.getValue()).isEmpty()) {
+            localHttpAddress = getJBossAddress();
+        }
+        else {
+            localHttpAddress = (String) localAddressProperty.getValue();
+        }
+        return localHttpAddress;
+    }
+    
 	@Override
 	public void serviceActive(ReceivableService arg0) {
 		// TODO Auto-generated method stub
@@ -346,4 +453,20 @@ public class SmppServerResourceAdaptor implements ResourceAdaptor {
 	public SmppServerResourceAdaptorStatisticsUsageParameters getStatisticsUsageParameterSet() {
 	    return this.defaultUsageParameters;
 	}
+	
+	private String getJBossAddress() {
+        String address = null;
+        Object inetAddress = null;
+        try {
+            inetAddress = ManagementFactory.getPlatformMBeanServer()
+                    .getAttribute(new ObjectName("jboss.as:interface=public"), "inet-address");         
+        } catch (Exception e) {
+        }
+
+        if (inetAddress != null) {
+            address = inetAddress.toString();
+        }
+
+        return address;
+    }
 }
