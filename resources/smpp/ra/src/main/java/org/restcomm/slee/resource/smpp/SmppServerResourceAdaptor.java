@@ -272,6 +272,9 @@ public class SmppServerResourceAdaptor implements ResourceAdaptor {
 		this.sleeEndpoint = null;
 		this.eventLookup = null;
 		this.eventIdCache = null;
+		if(this.smppServerSession != null) {
+		    this.smppServerSession.stopInactivityTimer();
+		}
 		this.smppServerSession = null;
 	}
 

@@ -109,6 +109,13 @@ public class SmppSessionsImpl implements SmppSessions {
         esmeSenderInactiveStateTimer.scheduleAtFixedRate(esmeSenderInactiveStateThread, 0, 10000L);
     }
     
+    public void stopInactivityTimer() {
+        if(esmeSenderInactiveStateTimer != null) {
+            esmeSenderInactiveStateTimer.cancel();
+            esmeSenderInactiveStateTimer = null;
+        }
+    }
+    
     protected SmppSessionHandlerInterface getSmppSessionHandlerInterface() {
         return this.smppSessionHandlerInterfaceImpl;
     }
@@ -381,6 +388,8 @@ public class SmppSessionsImpl implements SmppSessions {
                         + future.getRequest().toString());
                 defaultSession.expired(future);
             }
+            
+            smppSessionHandlerInterfaceImpl.destroySmppSessionHandler(esme);
         }
 
         @Override
