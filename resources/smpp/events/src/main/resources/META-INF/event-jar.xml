@@ -5,6 +5,12 @@
 <event-jar>
 	<description>Event definitions SMPP Server RA events</description>
 
+	<library-ref>
+        <library-name>library-smpp-server</library-name>
+        <library-vendor>library-smpp-server</library-vendor>
+        <library-version>1.0</library-version>
+    </library-ref>
+
 	<!-- transaction Request events -->
 
 	<event-definition>
