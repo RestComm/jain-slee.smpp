@@ -12,6 +12,13 @@
 
 	<dependencies>
 		<dependency>
+			<groupId>org.jboss.jbossas</groupId>
+			<artifactId>jboss-as-system-jmx</artifactId>
+			<version>${jboss.version}</version>
+			<scope>compile</scope>
+		</dependency>
+
+		<dependency>
 			<groupId>${project.groupId}</groupId>
 			<artifactId>smpp-server-ra-ratype</artifactId>
 			<version>${project.version}</version>
