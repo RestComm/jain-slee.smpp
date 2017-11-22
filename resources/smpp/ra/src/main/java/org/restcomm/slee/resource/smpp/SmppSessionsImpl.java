@@ -526,9 +526,9 @@ public class SmppSessionsImpl implements SmppSessions {
                             + future.getRequest().toString());
                     defaultSession.expired(future);
                 }
-                tracer.severe("Received fireUnknownThrowable: ", throwable);
+                tracer.severe("Received fireUnknownThrowable. Message: " + throwable.getMessage(), throwable);
             } else {
-                tracer.severe("Received fireUnknownThrowable with undifined defaultSession: ", throwable);
+                tracer.severe("Received fireUnknownThrowable with undifined defaultSession. Message: " + throwable.getMessage(), throwable);
             }
 
             // TODO what here?
