@@ -47,11 +47,11 @@
             <config-property-type>java.lang.String</config-property-type>
             <config-property-value></config-property-value>
         </config-property>
-        <!--config-property>
+        <config-property>
             <config-property-name>org.mobicents.resources.smpp-server-ra-ra.LOCAL_SSL_PORT</config-property-name>
             <config-property-type>java.lang.Integer</config-property-type>
-            <config-property-value></config-property-value>
-        </config-property-->
+            <config-property-value>-1</config-property-value>
+        </config-property>
         <config-property>
             <config-property-name>org.mobicents.resources.smpp-server-ra-ra.BALANCERS</config-property-name>
             <config-property-type>java.lang.String</config-property-type>
