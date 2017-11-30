@@ -73,8 +73,10 @@ public class ResponseSender extends Thread {
                                 task.getResponse(), e, false);
                     } finally {
                         SmppSessionCounters smppSessionCounters = task.getEsme().getSmppSession().getCounters();
-                        long responseTime = System.currentTimeMillis() - task.getSmppServerTransaction().getStartTime();
-                        countSendResponsePdu(smppSessionCounters, task.getResponse(), responseTime, responseTime);
+                        if (smppSessionCounters != null) {
+                            long responseTime = System.currentTimeMillis() - task.getSmppServerTransaction().getStartTime();
+                            countSendResponsePdu(smppSessionCounters, task.getResponse(), responseTime, responseTime);
+                        }
                     }
                 }
             } catch(InterruptedException ex) { 
