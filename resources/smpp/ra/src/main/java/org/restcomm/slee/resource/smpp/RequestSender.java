@@ -22,7 +22,6 @@ public class RequestSender extends Thread {
     private LinkedBlockingQueue<SmppRequestTask> queue = new LinkedBlockingQueue<SmppRequestTask>();
     private long timeout;
     private Esme esme;
-    private Semaphore semaphore;
 
     private SmppServerResourceAdaptor smppServerResourceAdaptor;
     private Tracer tracer;
@@ -36,7 +35,6 @@ public class RequestSender extends Thread {
         this.smppServerResourceAdaptor = smppServerResourceAdaptor;
         this.tracer = tracer;
         this.esme = esme;
-        this.semaphore = new Semaphore(1, true);
     }
 
     public void deactivate() {
@@ -58,20 +56,9 @@ public class RequestSender extends Thread {
             String systemId = null;
 
             try {
-                // needed to ensure we poll tasks one by one to not miss the threshold
-                try {
-                    semaphore.acquire();
-                } catch (InterruptedException ex) {
-
-                }
-
-                try {
-                    task = queue.poll(timeout, TimeUnit.MILLISECONDS);
-                    if (esme.getNormalThreshold() != -1 && queue.size() <= esme.getNormalThreshold() && esme.isOverloaded()) {
-                        esme.setOverloaded(false);
-                    }
-                } finally {
-                    semaphore.release();
+                task = queue.poll(timeout, TimeUnit.MILLISECONDS);
+                if (esme.getNormalThreshold() >= 0 && queue.size() <= esme.getNormalThreshold() && esme.isOverloaded()) {
+                    esme.setOverloaded(false);
                 }
 
                 if (task != null) {
@@ -126,21 +113,10 @@ public class RequestSender extends Thread {
             logQueueSizeIfNecessary();
             logPreviousTaskLongRunIfNecessary();
         }
-        try {
-            // needed to ensure we offer tasks one by one to ensure we don't miss the threshold
-            semaphore.acquire();
-        } catch (InterruptedException e) {
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
 
-        try {
-            queue.offer(task);
-            if (esme.getOverloadThreshold() != -1 && queue.size() >= esme.getOverloadThreshold() && !esme.isOverloaded()) {
-                esme.setOverloaded(true);
-            }
-        } finally {
-            semaphore.release();
+        queue.offer(task);
+        if (esme.getOverloadThreshold() >= 1 && queue.size() >= esme.getOverloadThreshold() && !esme.isOverloaded()) {
+            esme.setOverloaded(true);
         }
     }
 
