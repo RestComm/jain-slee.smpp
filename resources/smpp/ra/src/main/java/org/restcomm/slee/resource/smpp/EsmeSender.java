@@ -1,7 +1,7 @@
 package org.restcomm.slee.resource.smpp;
 
 public class EsmeSender {
-    
+
     private RequestSender requestThread;
     private ResponseSender responseThread;
 
@@ -27,11 +27,11 @@ public class EsmeSender {
     public void offerResponse(SmppResponseTask task) {
         responseThread.offer(task);
     }
-    
+
     public long getRequestSenderPreviousIterationTime() {
         return requestThread.getPreviousIterationTime();
     }
-    
+
     public long getResponseSenderPreviousIterationTime() {
         return responseThread.getPreviousIterationTime();
     }
