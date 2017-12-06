@@ -77,7 +77,14 @@
 			<artifactId>heartbeat-api</artifactId>
 			<version>${restcomm.load.balancer.version}</version>
 			<scope>provided</scope>
-		</dependency>			
+		</dependency>
+		
+		<dependency>
+            <groupId>org.jboss.jbossas</groupId>
+            <artifactId>jboss-as-system-jmx</artifactId>
+            <version>${jboss.version}</version>
+            <scope>compile</scope>
+        </dependency>			
 	</dependencies>
 
 	<profiles>
