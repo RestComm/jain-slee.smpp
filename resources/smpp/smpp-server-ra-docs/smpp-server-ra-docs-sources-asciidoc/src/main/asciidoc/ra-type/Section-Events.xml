@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd" [
+<!ENTITY % BOOK_ENTITIES SYSTEM "../User_Guide.ent">
+%BOOK_ENTITIES;
+]>
+
+<section id="ratype_events">
+	<title>Events</title>
+	<para>
+		Events represent's &THIS.RA;'s messages related to dialog, component as well as services.
+		Events are fired on <literal>SmppTransaction</literal>. Below sections detail different type of events, 
+		depending on cause of it being fired into SLEE.
+	</para>
+
+	<section id="ratype_events_component">
+		<title>Component</title>
+		<para>
+			Below events are fired into <acronym>SLEE</acronym> when something happens with components passed in
+			<acronym>&THIS.RA;</acronym> messages.
+		</para>
+		<important>
+			<para>
+				For proper render of this table prefixes, for entries on some columns are omitted. 
+				For prefix values, for each column, please see list below: 
+			</para>
+			<variablelist>
+				<varlistentry>
+					<term>Name</term>
+					<listitem>
+						<para>org.restcomm.slee.resource.smpp.SUBMIT_SM.</para>
+					</listitem>
+				</varlistentry>
+				<varlistentry>
+					<term>Event Class</term>
+					<listitem>
+						<para>com.cloudhopper.smpp.pdu.SubmitSm.</para>
+					</listitem>
+				</varlistentry>
+			</variablelist>
+			<para>Version for all defined events is 1.0</para>
+			<para>Vendor for all defined events is org.restcomm</para>
+			<para>
+				Spaces where introduced in <literal>Name</literal>
+				column values, to correctly render the table. Please remove them when using copy/paste.
+			</para>
+		</important>
+		<table frame="all" pgwide="1">
+			<title>Component events</title>
+			<tgroup
+				colsep="1"
+				cols="3">
+				<colspec
+					colnum="1"
+					colname="c0"
+					colwidth="3*" />
+				<colspec
+					colnum="2"
+					colname="c3"
+					colwidth="3*" />
+				<colspec
+					colnum="3"
+					colname="c6"
+					colwidth="3*" />
+				<thead>
+					<row>
+						<entry>Name</entry>
+						<entry>Event Class</entry>
+						<entry>Comments</entry>
+					</row>
+				</thead>
+				<tbody>
+
+					<row>
+						<entry>org.restcomm.slee.resource.smpp.SUBMIT_SM</entry>
+						<entry>com.cloudhopper.smpp.pdu.SubmitSm</entry>
+						<entry>This operation is used by an ESME to submit a short message to the SMSC for onward transmission to a specified short message entity (SME)</entry>
+					</row>
+					
+					<row>
+						<entry>org.restcomm.slee.resource.smpp.DATA_SM</entry>
+						<entry>com.cloudhopper.smpp.pdu.DataSm</entry>
+						<entry>This command is used to transfer data between the SMSC and the ESME. It may be used by both the ESME and SMSC. This command is an alternative to the submit_sm and deliver_sm commands. It is introduced as a new command to be used by interactive applications such as those provided via a WAP framework. The ESME may use this command to request the SMSC to transfer a message to an MS. The SMSC may also use this command to transfer an MS originated message to an ESME.</entry>
+					</row>
+					
+					<row>
+						<entry>org.restcomm.slee.resource.smpp.DELIVER_SM</entry>
+						<entry>com.cloudhopper.smpp.pdu.DeliverSm</entry>
+						<entry>The deliver_sm is issued by the SMSC to send a message to an ESME. Using this command, the SMSC may route a short message to the ESME for delivery.</entry>
+					</row>
+					
+					<row>
+						<entry>org.restcomm.slee.resource.smpp.SUBMIT_MULTI</entry>
+						<entry>com.cloudhopper.smpp.pdu.SubmitMulti</entry>
+						<entry>This operation is used by an ESME to submit a short message to the SMSC (several destination addresses) for onward transmission to a specified short message entity (SME)</entry>
+					</row>
+					
+					<row>
+						<entry>org.restcomm.slee.resource.smpp.SUBMIT_SM_RESP</entry>
+						<entry>com.cloudhopper.smpp.pdu.SubmitSmResp</entry>
+						<entry>This operation is used by an SMSC to respond to SUBMIT_SM request received</entry>
+					</row>
+					
+					<row>
+						<entry>org.restcomm.slee.resource.smpp.SUBMIT_MULTI_RESP</entry>
+						<entry>com.cloudhopper.smpp.pdu.SubmitMultiResp</entry>
+						<entry>This operation is used by an SMSC to respond to SUBMIT_MULTI request received</entry>
+					</row>
+					
+					<row>
+						<entry>org.restcomm.slee.resource.smpp.DATA_SM_RESP</entry>
+						<entry>com.cloudhopper.smpp.pdu.DataSmResp</entry>
+						<entry>This operation is used by an SMSC to respond to SUBMIT_SM request received</entry>
+					</row>
+					
+					<row>
+						<entry>org.restcomm.slee.resource.smpp.DELIVER_SM_RESP</entry>
+						<entry>com.cloudhopper.smpp.pdu.DeliverSmResp</entry>
+						<entry>This operation is used by an SMSC to respond to SUBMIT_SM request received</entry>
+					</row>
+					
+					<row>
+						<entry>org.restcomm.slee.resource.smpp.REQUEST_TIMEOUT</entry>
+						<entry>org.restcomm.slee.resource.smpp.PduRequestTimeout</entry>
+						<entry>This operation is used by an SMSC to respond to SUBMIT_SM request received</entry>
+					</row>
+					
+					<row>
+						<entry>org.restcomm.slee.resource.smpp.RECOVERABLE_PDU_EXCEPTION</entry>
+						<entry>com.cloudhopper.smpp.type.RecoverablePduException</entry>
+						<entry>Thrown when a recoverable PDU decoding error occurs. A recoverable PDU error includes the partially decoded PDU in order to generate a negative acknowledgement response (if needed).</entry>
+					</row>
+					
+					<row>
+						<entry>org.restcomm.slee.resource.smpp.SEND_PDU_STATUS</entry>
+						<entry>org.restcomm.slee.resource.smpp.SendPduStatus</entry>
+						<entry>This operation is used to indicate the status of ESME PDU</entry>
+					</row>
+				</tbody>
+			</tgroup>
+
+		</table>
+	</section>
+</section>

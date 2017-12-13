@@ -19,6 +19,7 @@
 		<module>ratype</module>
 		<module>ra</module>
 		<module>du</module>
+		<module>smpp-server-ra-docs</module>
 	</modules>
 
 	<profiles>

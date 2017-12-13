@@ -1,0 +1,9 @@
+
+[[_ratype_activities]]
+= Activities
+
+An SMPP activity object represents a set of related events in an SMPP resource.
+This RA Type defines one activity object:
+SmppTransaction::
+  Class name is `org.restcomm.slee.resource.smpp.SmppTransaction`
+  New SmppTransaction activity objects are created via specific {this-ra} Service interface. Check <<ra-type/Section-Resource_Adaptor_Interface.adoc#_ratype_ra_interface,Resource Adaptor Interface>> section for available services.	

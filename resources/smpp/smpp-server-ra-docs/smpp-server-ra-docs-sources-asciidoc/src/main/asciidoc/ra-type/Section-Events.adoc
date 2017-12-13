@@ -1,0 +1,46 @@
+
+[[_ratype_events]]
+= Events
+
+Events represent's SMPP's common services are fired on `SmppTransaction`. Below sections detail different type of events, depending on cause of it beeing fired into SLEE. 
+
+[[_ratype_events_component]]
+== Component
+
+Below events are fired into SLEE when something happens with components passed in {this-ra} messages. 
+
+[IMPORTANT]
+====
+For proper render of this table prefixes, for entries on some columns are omitted.
+For prefix values, for each column, please see list below: 
+
+Name::
+  org.restcomm.slee.resource.smpp.SUBMIT_SM. 
+
+Event Class::
+  com.cloudhopper.smpp.pdu.SubmitSm
+
+Version for all defined events is 1.0
+
+Vendor for all defined events is org.restcomm
+
+Spaces where introduced in `Name` column values, to correctly render the table.
+Please remove them when using copy/paste. 
+====
+
+.Component events
+[cols="1,1,1", frame="all", options="header"]
+|===
+| Name | Event Class | Comments
+| org.restcomm.slee.resource.smpp.SUBMIT_SM | com.cloudhopper.smpp.pdu.SubmitSm | This operation is used by an ESME to submit a short message to the SMSC for onward transmission to a specified short message entity (SME)
+| org.restcomm.slee.resource.smpp.DATA_SM | com.cloudhopper.smpp.pdu.DataSm | This command is used to transfer data between the SMSC and the ESME. It may be used by both the ESME and SMSC. This command is an alternative to the submit_sm and deliver_sm commands. It is introduced as a new command to be used by interactive applications such as those provided via a WAP framework. The ESME may use this command to request the SMSC to transfer a message to an MS. The SMSC may also use this command to transfer an MS originated message to an ESME.
+| org.restcomm.slee.resource.smpp.DELIVER_SM | com.cloudhopper.smpp.pdu.DeliverSm | The deliver_sm is issued by the SMSC to send a message to an ESME. Using this command, the SMSC may route a short message to the ESME for delivery.
+| org.restcomm.slee.resource.smpp.SUBMIT_MULTI | com.cloudhopper.smpp.pdu.SubmitMulti | This operation is used by an ESME to submit a short message to the SMSC (several destination addresses) for onward transmission to a specified short message entity (SME)
+| org.restcomm.slee.resource.smpp.SUBMIT_SM_RESP | com.cloudhopper.smpp.pdu.SubmitSmResp | This operation is used by an SMSC to respond to SUBMIT_SM request received
+| org.restcomm.slee.resource.smpp.SUBMIT_MULTI_RESP | com.cloudhopper.smpp.pdu.SubmitMultiResp | This operation is used by an SMSC to respond to SUBMIT_MULTI request received
+| org.restcomm.slee.resource.smpp.DATA_SM_RESP | com.cloudhopper.smpp.pdu.DataSmResp | This operation is used by an SMSC to respond to SUBMIT_SM request received
+| org.restcomm.slee.resource.smpp.DELIVER_SM_RESP | com.cloudhopper.smpp.pdu.DeliverSmResp | This operation is used by an SMSC to respond to SUBMIT_SM request received
+| org.restcomm.slee.resource.smpp.REQUEST_TIMEOUT | org.restcomm.slee.resource.smpp.PduRequestTimeout | This operation is used by an SMSC to respond to SUBMIT_SM request received
+| org.restcomm.slee.resource.smpp.RECOVERABLE_PDU_EXCEPTION | com.cloudhopper.smpp.type.RecoverablePduException | Thrown when a recoverable PDU decoding error occurs. A recoverable PDU error includes the partially decoded PDU in order to generate a negative acknowledgement response (if needed).
+| org.restcomm.slee.resource.smpp.SEND_PDU_STATUS | org.restcomm.slee.resource.smpp.SendPduStatus | This operation is used to indicate the status of ESME PDU
+|===
