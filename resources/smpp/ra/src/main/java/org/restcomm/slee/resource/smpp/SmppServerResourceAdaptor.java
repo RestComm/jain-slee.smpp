@@ -152,17 +152,20 @@ public class SmppServerResourceAdaptor implements ResourceAdaptor {
     @Override
     public void raActive() {
         try {
+            MBeanServer mBeanServer = null;
             ObjectName objectName = new ObjectName("org.restcomm.smpp:name=SmppManagement");
             Object object = null;
             if (ManagementFactory.getPlatformMBeanServer().isRegistered(objectName)) {
                 // trying to get via MBeanServer
-                object = ManagementFactory.getPlatformMBeanServer().getAttribute(objectName, "SmppManagementInstance");
+                mBeanServer = ManagementFactory.getPlatformMBeanServer();
+                object = mBeanServer.getAttribute(objectName, "SmppManagementInstance");
                 if (tracer.isInfoEnabled()) {
                     tracer.info("Trying to get via Platform MBeanServer: " + objectName + ", object: " + object);
                 }
             } else {
                 // trying to get via locateJBoss
-                object = MBeanServerLocator.locateJBoss().getAttribute(objectName, "SmppManagementInstance");
+                mBeanServer = MBeanServerLocator.locateJBoss();
+                object = mBeanServer.getAttribute(objectName, "SmppManagementInstance");
                 if (tracer.isInfoEnabled()) {
                     tracer.info("Trying to get via JBoss MBeanServer: " + objectName + ", object: " + object);
                 }
@@ -178,6 +181,11 @@ public class SmppServerResourceAdaptor implements ResourceAdaptor {
                 if (tracer.isInfoEnabled()) {
                     tracer.info("Activated RA Entity " + this.raContext.getEntityName());
                 }
+
+                if(loadBalancerHeartBeatingServiceProperties != null) {
+                    loadBalancerHeartBeatingService = initHeartBeatingService(mBeanServer);
+                    loadBalancerHeartBeatingService.start();
+                }
             } else {
                 if (object != null) {
                     if (tracer.isWarningEnabled()) {
@@ -191,11 +199,6 @@ public class SmppServerResourceAdaptor implements ResourceAdaptor {
                                 + " can't be activated: SmppManagementInstance() returns null");
                     }
                 }
-            }
-
-            if(loadBalancerHeartBeatingServiceProperties != null) {
-                loadBalancerHeartBeatingService = initHeartBeatingService();
-                loadBalancerHeartBeatingService.start();
             }
         } catch (Exception e) {
             this.tracer.severe("Failed to activate SMPP Server RA ", e);
@@ -308,7 +311,7 @@ public class SmppServerResourceAdaptor implements ResourceAdaptor {
         }
     }
 
-    private SmppLoadBalancerHeartBeatingService initHeartBeatingService() throws Exception {
+    private SmppLoadBalancerHeartBeatingService initHeartBeatingService(MBeanServer mBeanServer) throws Exception {
         int smppBindPort = SmppManagement.getInstance().getSmppServerManagement().getBindPort();
         loadBalancerHeartBeatingServiceProperties.setProperty(SmppLoadBalancerHeartBeatingServiceImpl.LOCAL_PORT,
                 String.valueOf(smppBindPort));
@@ -316,14 +319,6 @@ public class SmppServerResourceAdaptor implements ResourceAdaptor {
                 .getProperty(SmppLoadBalancerHeartBeatingService.LB_HB_SERVICE_CLASS_NAME);
         SmppLoadBalancerHeartBeatingService service = (SmppLoadBalancerHeartBeatingService) Class
                 .forName(httpBalancerHeartBeatServiceClassName).newInstance();
-
-        MBeanServer mBeanServer;
-        try {
-            mBeanServer = MBeanServerLocator.locateJBoss();
-        } catch (NoClassDefFoundError e) {
-            // we have here an Exception for WildFly and get mBeanServer from by a WildFly style
-            mBeanServer = ManagementFactory.getPlatformMBeanServer();
-        }
 
         String stackName = this.raContext.getEntityName();
         service.init(this.raContext, mBeanServer, stackName, loadBalancerHeartBeatingServiceProperties);
