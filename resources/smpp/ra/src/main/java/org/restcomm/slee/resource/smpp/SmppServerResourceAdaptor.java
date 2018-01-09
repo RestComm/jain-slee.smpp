@@ -316,7 +316,15 @@ public class SmppServerResourceAdaptor implements ResourceAdaptor {
                 .getProperty(SmppLoadBalancerHeartBeatingService.LB_HB_SERVICE_CLASS_NAME);
         SmppLoadBalancerHeartBeatingService service = (SmppLoadBalancerHeartBeatingService) Class
                 .forName(httpBalancerHeartBeatServiceClassName).newInstance();
-        MBeanServer mBeanServer = MBeanServerLocator.locateJBoss();
+
+        MBeanServer mBeanServer;
+        try {
+            mBeanServer = MBeanServerLocator.locateJBoss();
+        } catch (NoClassDefFoundError e) {
+            // we have here an Exception for WildFly and get mBeanServer from by a WildFly style
+            mBeanServer = ManagementFactory.getPlatformMBeanServer();
+        }
+
         String stackName = this.raContext.getEntityName();
         service.init(this.raContext, mBeanServer, stackName, loadBalancerHeartBeatingServiceProperties);
         return service;
