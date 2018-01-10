@@ -121,5 +121,7 @@
 				<updatePolicy>never</updatePolicy>
 			</releases>
 		</pluginRepository>
+
+<!-- the place to extra repos -->
 	</pluginRepositories>
 </project>
