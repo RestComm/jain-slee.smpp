@@ -94,6 +94,8 @@
                 <updatePolicy>never</updatePolicy>
             </snapshots>
         </repository>
+
+<!-- the place to extra repos -->
     </repositories>
 	
 	<pluginRepositories>
@@ -122,6 +124,5 @@
 			</releases>
 		</pluginRepository>
 
-<!-- the place to extra repos -->
 	</pluginRepositories>
 </project>
