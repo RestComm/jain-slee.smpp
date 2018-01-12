@@ -277,7 +277,8 @@ public class SmppServerResourceAdaptor implements ResourceAdaptor {
                         .getValue();
                 if (localHttpAddress != null && !localHttpAddress.isEmpty()) {
                     InetSocketAddress sockAddress = new InetSocketAddress(localHttpAddress, localHttpPort);
-                    checkSocketAddress(sockAddress);
+                 // bypassing it now because stack is nor running this time
+//                    checkSocketAddress(sockAddress);
                 }
             }
         }
