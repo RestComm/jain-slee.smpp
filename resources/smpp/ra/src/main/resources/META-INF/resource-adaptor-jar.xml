@@ -42,30 +42,5 @@
 			</resource-adaptor-usage-parameters-interface>
 		</resource-adaptor-classes>
 		
-        <config-property>
-            <config-property-name>org.mobicents.resources.smpp-server-ra-ra.LOCAL_ADDRESS</config-property-name>
-            <config-property-type>java.lang.String</config-property-type>
-            <config-property-value></config-property-value>
-        </config-property>
-        <config-property>
-            <config-property-name>org.mobicents.resources.smpp-server-ra-ra.LOCAL_SSL_PORT</config-property-name>
-            <config-property-type>java.lang.Integer</config-property-type>
-            <config-property-value>-1</config-property-value>
-        </config-property>
-        <config-property>
-            <config-property-name>org.mobicents.resources.smpp-server-ra-ra.BALANCERS</config-property-name>
-            <config-property-type>java.lang.String</config-property-type>
-            <config-property-value></config-property-value>
-        </config-property>
-        <config-property>
-            <config-property-name>org.mobicents.resources.smpp-server-ra-ra.LoadBalancerHeartBeatingServiceClassName</config-property-name>
-            <config-property-type>java.lang.String</config-property-type>
-            <config-property-value>org.restcomm.slee.resource.smpp.heartbeat.SmppLoadBalancerHeartBeatingServiceImpl</config-property-value>
-        </config-property>
-        <config-property>
-            <config-property-name>org.mobicents.resources.smpp-server-ra-ra.HEARTBEAT_INTERVAL</config-property-name>
-            <config-property-type>java.lang.Integer</config-property-type>
-            <config-property-value>5000</config-property-value>
-        </config-property>
 	</resource-adaptor>
 </resource-adaptor-jar>
