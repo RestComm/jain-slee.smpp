@@ -18,6 +18,7 @@ import org.restcomm.slee.resource.smpp.PduRequestTimeout;
 import org.restcomm.slee.resource.smpp.SmppSessions;
 import org.restcomm.slee.resource.smpp.SmppTransaction;
 import org.restcomm.smpp.Esme;
+import org.restcomm.smpp.EsmeManagement;
 import org.restcomm.smpp.SmppSessionHandlerInterface;
 
 import com.cloudhopper.commons.util.windowing.Window;
@@ -93,6 +94,9 @@ public class SmppSessionsImpl implements SmppSessions {
                             long diff = System.currentTimeMillis() - sender.getRequestSenderPreviousIterationTime();
                             if (diff > idleStateTimeout) {
                                 tracer.warning(esmeName + " RequestSender has been idle for " + diff);
+                                Esme esme = EsmeManagement.getInstance().getEsmeByName(esmeName);
+                                if (esme != null)
+                                    esme.updateRequestQueueSize(0);
                             }
                         }
 
@@ -100,6 +104,9 @@ public class SmppSessionsImpl implements SmppSessions {
                             long diff = System.currentTimeMillis() - sender.getResponseSenderPreviousIterationTime();
                             if (diff > idleStateTimeout) {
                                 tracer.warning(esmeName + " ResponseSender has been idle for " + diff);
+                                Esme esme = EsmeManagement.getInstance().getEsmeByName(esmeName);
+                                if (esme != null)
+                                    esme.updateResponseQueueSize(0);
                             }
                         }
                     }
@@ -390,6 +397,7 @@ public class SmppSessionsImpl implements SmppSessions {
                 defaultSession.expired(future);
             }
 
+            EsmeManagement.getInstance().esmeStartedNotConnected(esme.getName(), esme.getClusterName(), 1);
             smppSessionHandlerInterfaceImpl.destroySmppSessionHandler(esme);
         }
 

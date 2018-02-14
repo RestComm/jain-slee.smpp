@@ -40,7 +40,7 @@ import org.restcomm.smpp.SmppManagement;
 
 public class SmppServerResourceAdaptor implements ResourceAdaptor {
 
-	private transient Tracer tracer;
+    private transient Tracer tracer;
     private transient ResourceAdaptorContext raContext;
     private transient SleeEndpoint sleeEndpoint = null;
     private transient EventLookupFacility eventLookup = null;
@@ -148,8 +148,7 @@ public class SmppServerResourceAdaptor implements ResourceAdaptor {
 
     }
 
-    @Override
-    public void raActive() {
+    public SmppManagement getSmppManagement() {
         try {
             ObjectName objectName = new ObjectName("org.restcomm.smpp:name=SmppManagement");
             Object object = null;
@@ -167,32 +166,46 @@ public class SmppServerResourceAdaptor implements ResourceAdaptor {
                 }
             }
 
-            if (object != null && object instanceof SmppManagement) {
-                SmppManagement smscManagement = (SmppManagement) object;
-
-                smscManagement.setSmppSessionHandlerInterface(this.smppServerSession.getSmppSessionHandlerInterface());
-
-                smscManagement.startSmppManagement();
-
-                if (tracer.isInfoEnabled()) {
-                    tracer.info("Activated RA Entity " + this.raContext.getEntityName());
-                }
-            } else {
-                if (object != null) {
+            if (object != null) {
+                if (object instanceof SmppManagement)
+                    return (SmppManagement) object;
+                else {
                     if (tracer.isWarningEnabled()) {
                         tracer.warning("RA Entity " + this.raContext.getEntityName()
                                 + " can't be activated: SmppManagementInstance() returns object"
                                 + " that isn't SmppManagement instance! Object is " + object);
                     }
-                } else {
-                    if (tracer.isWarningEnabled()) {
-                        tracer.warning("RA Entity " + this.raContext.getEntityName()
-                                + " can't be activated: SmppManagementInstance() returns null");
-                    }
+                }
+            }
+        } catch (Exception e) {
+            tracer.severe(String.format("Exception while trying to get SmppManagement from Smpp Server RA", e));
+        }
+
+        return null;
+    }
+
+    @Override
+    public void raActive() {
+        try {
+            SmppManagement smppManagement = this.getSmppManagement();
+
+            if (smppManagement != null) {
+
+                smppManagement.setSmppSessionHandlerInterface(this.smppServerSession.getSmppSessionHandlerInterface());
+
+                smppManagement.startSmppManagement();
+
+                if (tracer.isInfoEnabled()) {
+                    tracer.info("Activated RA Entity " + this.raContext.getEntityName());
+                }
+            } else {
+                if (tracer.isWarningEnabled()) {
+                    tracer.warning("RA Entity " + this.raContext.getEntityName()
+                            + " can't be activated: SmppManagementInstance() returns null");
                 }
             }
 
-            if(loadBalancerHeartBeatingServiceProperties != null) {
+            if (loadBalancerHeartBeatingServiceProperties != null) {
                 loadBalancerHeartBeatingService = initHeartBeatingService();
                 loadBalancerHeartBeatingService.start();
             }
@@ -229,7 +242,7 @@ public class SmppServerResourceAdaptor implements ResourceAdaptor {
         }
 
         try {
-            if(loadBalancerHeartBeatingService != null) {
+            if (loadBalancerHeartBeatingService != null) {
                 loadBalancerHeartBeatingService.stop();
                 loadBalancerHeartBeatingService = null;
             }
@@ -409,8 +422,7 @@ public class SmppServerResourceAdaptor implements ResourceAdaptor {
 
     private String prepareProperty(ConfigProperties configProperties, String propertyName) {
         String propertyValue = null;
-        ConfigProperties.Property configProperty = configProperties
-                .getProperty(propertyName);
+        ConfigProperties.Property configProperty = configProperties.getProperty(propertyName);
         if (configProperty != null && configProperty.getValue() != null) {
             propertyValue = String.valueOf(configProperty.getValue());
         }

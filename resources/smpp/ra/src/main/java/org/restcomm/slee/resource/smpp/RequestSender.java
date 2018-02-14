@@ -1,7 +1,6 @@
 package org.restcomm.slee.resource.smpp;
 
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -57,6 +56,10 @@ public class RequestSender extends Thread {
 
             try {
                 task = queue.poll(timeout, TimeUnit.MILLISECONDS);
+                if (task != null) {
+                    esme.updateRequestQueueSize(queue.size());
+                }
+
                 if (esme.getNormalThreshold() >= 0 && queue.size() <= esme.getNormalThreshold() && esme.getOverloaded()) {
                     esme.setOverloaded(false);
                 }
@@ -115,6 +118,9 @@ public class RequestSender extends Thread {
         }
 
         queue.offer(task);
+
+        esme.updateRequestQueueSize(queue.size());
+
         if (esme.getOverloadThreshold() >= 1 && queue.size() >= esme.getOverloadThreshold() && !esme.getOverloaded()) {
             esme.setOverloaded(true);
         }

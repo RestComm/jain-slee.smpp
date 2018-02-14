@@ -24,7 +24,7 @@ public class ResponseSender extends Thread {
     private Tracer tracer;
 
     private AtomicLong lastOfferTimestamp = new AtomicLong();
-    
+
     public ResponseSender(SmppServerResourceAdaptor smppServerResourceAdaptor, Tracer tracer, String name, long timeout) {
         super(name);
         this.timeout = timeout;
@@ -50,10 +50,15 @@ public class ResponseSender extends Thread {
             SmppResponseTask task = null;
             try {
                 task = queue.poll(timeout, TimeUnit.MILLISECONDS);
+
+                if (task != null) {
+                    task.getEsme().updateResponseQueueSize(queue.size());
+                }
+
                 if (task != null) {
                     DefaultSmppSession defaultSmppSession = task.getEsme().getSmppSession();
                     task.getSmppServerTransaction().acquireSemaphore();
-                    
+
                     try {
                         lastOfferTimestamp.set(System.currentTimeMillis());
                         defaultSmppSession.sendResponsePdu(task.getResponse());
@@ -79,8 +84,8 @@ public class ResponseSender extends Thread {
                         }
                     }
                 }
-            } catch(InterruptedException ex) { 
-            	//that should be legal if queue empty or we are stopping
+            } catch (InterruptedException ex) {
+                // that should be legal if queue empty or we are stopping
             } catch (Exception e) {
                 tracer.severe("Exception when sending of sendResponsePdu: " + e.getMessage(), e);
                 if (task != null) {
@@ -88,9 +93,9 @@ public class ResponseSender extends Thread {
                             task.getResponse(), e, false);
                 }
             } finally {
-            	if(task!=null) {
-            		task.getSmppServerTransaction().releaseSemaphore();
-            	}
+                if (task != null) {
+                    task.getSmppServerTransaction().releaseSemaphore();
+                }
             }
         }
     }
@@ -101,33 +106,40 @@ public class ResponseSender extends Thread {
             logPreviousTaskLongRunIfNecessary();
         }
         queue.offer(task);
+
+        if (task != null) {
+            task.getEsme().updateResponseQueueSize(queue.size());
+        }
+
     }
 
-    private static final int[] SIZE_STEP_ARRAY  = {10,100,200,500,1000};
+    private static final int[] SIZE_STEP_ARRAY = { 10, 100, 200, 500, 1000 };
+
     private void logQueueSizeIfNecessary() {
         int queueSize = queue.size();
         for (int i = 1; i < SIZE_STEP_ARRAY.length; i++) {
             int step = SIZE_STEP_ARRAY[i];
-            if(queueSize == step) {
+            if (queueSize == step) {
                 tracer.fine("Response queue size reached " + step);
                 break;
             }
         }
     }
-    
-    private static final int[] SIZE_STEP_ARRAY_2  = {1, 10,100,200,500,1000};
+
+    private static final int[] SIZE_STEP_ARRAY_2 = { 1, 10, 100, 200, 500, 1000 };
+
     private void logPreviousTaskLongRunIfNecessary() {
         int queueSize = queue.size();
-        if(queueSize > 0) {
+        if (queueSize > 0) {
             long diff = System.currentTimeMillis() - lastOfferTimestamp.get();
-            if(diff > 1000) {
+            if (diff > 1000) {
                 for (int i = 0; i < SIZE_STEP_ARRAY_2.length; i++) {
                     int step = SIZE_STEP_ARRAY_2[i];
-                    if(queueSize == step) {
+                    if (queueSize == step) {
                         tracer.fine("Previous response task takes too long to execute, diff:" + diff + "ms");
                         break;
                     }
-                } 
+                }
             }
         }
     }
@@ -144,8 +156,8 @@ public class ResponseSender extends Thread {
                     "Received fireRecoverablePduException. Error while processing RecoverablePduException=%s", event), e);
         } finally {
             if (smppServerTransaction == null) {
-                tracer.severe(String.format("SmppTransactionImpl Activity is null while trying to send PduResponse=%s",
-                        response));
+                tracer.severe(
+                        String.format("SmppTransactionImpl Activity is null while trying to send PduResponse=%s", response));
             } else {
                 this.smppServerResourceAdaptor.endActivity(smppServerTransaction);
             }
@@ -181,7 +193,7 @@ public class ResponseSender extends Thread {
                     counters.getRxEnquireLink().getResponseCommandStatusCounter().incrementAndGet(pdu.getCommandStatus());
                     break;
 
-            // TODO: adding here statistics for SUBMIT_MULTI ?
+                // TODO: adding here statistics for SUBMIT_MULTI ?
             }
         }
     }
