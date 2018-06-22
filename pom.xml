@@ -10,7 +10,7 @@
 
 	<groupId>org.restcomm.slee.resource.smpp</groupId>
 	<artifactId>restcomm-slee-smpp</artifactId>
-	<version>7.1.0-SNAPSHOT</version>
+	<version>7.1.0-156</version>
 			
 	<packaging>pom</packaging>
 	
@@ -21,7 +21,7 @@
 
 	<properties>
 		<ch.smpp.version>5.1.0-113</ch.smpp.version>
-		<smpp-extensions.version>7.2.0-137</smpp-extensions.version>
+		<smpp-extensions.version>7.1.0-158</smpp-extensions.version>
 		<restcomm.slee.ext.version>7.0.63</restcomm.slee.ext.version>
 		<maven.du.plugin.jboss5.version>3.0.14</maven.du.plugin.jboss5.version>
 		<maven.du.plugin.wildfly.version>4.0.2</maven.du.plugin.wildfly.version>
